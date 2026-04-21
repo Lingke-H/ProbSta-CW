@@ -1,0 +1,158 @@
+---
+title: "An Analysis of School Attendance Rates across Scottish Data Zones"
+date: ''
+output:
+  pdf_document: default
+  bookdown::html_document2:
+    number_sections: false
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+dat <- read.csv("scottishData.csv")
+library(ggplot2)
+library(dplyr)
+library(broom)
+
+# Unified colour palette
+col_point <- "#525252"
+col_line  <- "#2166AC"
+col_ref   <- "#878787"
+```
+
+
+# Section 2: Correlation and Linear Regression
+
+Having established that Attendance differs between Glasgow and Edinburgh, we now consider all 400 data zones together to investigate which socio-economic factors are most closely associated with Attendance. We select four candidate predictors: Attainment, crime_rate, CIF (Community Integration Factor), and Income_rate.
+
+## 2.1 Pairwise Relationships
+
+```{r scatters_1, echo=FALSE, fig.height=6, fig.width=7, fig.cap='Pairwise scatterplot matrix of Attendance and four selected variables'}
+
+vars <- c("Attendance", "Attainment", "crime_rate", "CIF", "Income_rate")
+
+pairs(dat[, vars],
+      pch = 16, cex = 0.4, col = adjustcolor(col_point, alpha.f = 0.5),
+      main = "",
+      labels = c("Attendance", "Attainment", "Crime Rate", "CIF", "Income Rate"))
+```
+
+Figure 3 provides an overview of the bivariate relationships. Attendance appears negatively associated with Income_rate, CIF, and crime_rate, while displaying a positive trend with Attainment. The strongest visual pattern is the tight negative relationship between Attendance and Income_rate. To quantify these associations, we compute the full matrix of Pearson correlation coefficients.
+
+## 2.2 Pearson Correlation Coefficients
+
+```{r Pairwise Pearson correlation coefficients, echo = FALSE}
+# Full 5x5 pairwise Pearson correlation matrix
+cor_matrix <- round(cor(dat[, vars], use = "complete.obs", method = "pearson"), 3)
+colnames(cor_matrix) <- c("Attendance", "Attainment", "Crime Rate", "CIF", "Income Rate")
+rownames(cor_matrix) <- c("Attendance", "Attainment", "Crime Rate", "CIF", "Income Rate")
+
+knitr::kable(cor_matrix,
+             caption = "Pairwise Pearson correlation coefficients between the five selected variables.",
+             align = "c")
+
+# Store individual correlations for later use
+r_attainment <- cor_matrix[1, 2]
+r_crime      <- cor_matrix[1, 3]
+r_cif        <- cor_matrix[1, 4]
+r_income     <- cor_matrix[1, 5]
+```
+
+Table 6 confirms the visual impression. Attendance is most strongly correlated with Income_rate ($r =$ `r r_income`), followed by CIF ($r =$ `r r_cif`) and Attainment ($r =$ `r r_attainment`). Crime_rate shows a weaker association ($r =$ `r r_crime`). Notably, Income_rate, CIF, and crime_rate are also highly inter-correlated, reflecting the well-known overlap between deprivation indicators.
+
+Since Income_rate has the highest absolute correlation with Attendance, we select it as the predictor for a simple linear regression model.
+
+## 2.3 Simple Linear Regression
+
+```{r Linear Regression, echo = FALSE}
+# Identify the variable with the highest absolute correlation with Attendance
+correlations <- c(
+  Attainment = r_attainment,
+  Crime_rate = r_crime,
+  CIF = r_cif,
+  Income_rate = r_income
+)
+data2_name <- names(which.max(abs(correlations)))
+
+# Fit simple linear regression
+model_formula <- as.formula(paste("Attendance ~", data2_name))
+lm_model <- lm(model_formula, data = dat)
+
+# Extract coefficients
+intercept <- coef(lm_model)[1]
+slope     <- coef(lm_model)[2]
+r_squared <- summary(lm_model)$r.squared
+```
+
+The variable with the highest absolute correlation with Attendance is **`r data2_name`** ($r =$ `r round(correlations[data2_name], 3)`). We therefore fit a simple linear regression model:
+$$\text{Attendance} = \beta_0 + \beta_1 \times \text{`r gsub("_", "\\\\_", data2_name)`} + \varepsilon$$
+
+The estimated regression equation is: $\hat{y} =$ `r round(intercept, 4)` $+$ (`r round(slope, 4)`) $\times x$.
+
+```{r Linear Regression Analysis, echo = FALSE}
+
+# Regression coefficients table
+knitr::kable(tidy(lm_model), digits = 4,
+             caption = paste("Simple linear regression model: Attendance ~", data2_name))
+
+# 95% confidence intervals for coefficients
+ci <- confint(lm_model, level = 0.95)
+rownames(ci) <- c("Intercept ($\\beta_0$)", "Slope ($\\beta_1$)")
+colnames(ci) <- c("2.5%", "97.5%")
+knitr::kable(ci, digits = 4, caption = "95% Confidence Intervals for Regression Coefficients")
+```
+
+Both coefficients are highly significant ($p < 0.001$). The slope $\hat{\beta}_1 =$ `r round(slope, 4)` indicates that, on average, a one-unit increase in `r data2_name` is associated with a `r round(abs(slope), 4)` decrease in Attendance. The model explains `r round(r_squared * 100, 2)`% of the total variance ($R^2 =$ `r round(r_squared, 4)`), suggesting that `r data2_name` alone is a strong predictor of Attendance.
+
+## 2.4 Visualisation of the Fitted Model
+
+```{r linear_regression, echo = FALSE, fig.height=4, fig.width=6, fig.cap='Scatterplot with fitted regression line'}
+
+equation <- paste0("y = ", round(intercept, 3), " + (", round(slope, 3), ") * x")
+
+# Dynamic annotation position
+x_pos <- quantile(dat[[data2_name]], 0.75, na.rm = TRUE)
+y_pos <- quantile(dat$Attendance, 0.95, na.rm = TRUE)
+
+ggplot(dat, aes(x = !!sym(data2_name), y = Attendance)) +
+  geom_point(shape = 16, size = 1, colour = adjustcolor(col_point, alpha.f = 0.5)) +
+  geom_smooth(method = "lm", se = TRUE, colour = col_line, fill = adjustcolor(col_line, alpha.f = 0.15)) +
+  labs(
+    x = data2_name,
+    y = "Attendance",
+    title = paste("Regression of Attendance on", data2_name)
+  ) +
+  annotate("text", x = x_pos, y = y_pos, label = equation, parse = FALSE,
+           size = 4, colour = col_line) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+Figure 4 visualises the fitted line superimposed on the raw data. The negative trend is clear, and the shaded 95% confidence band for the regression line is narrow, reflecting the large sample size. Some dispersion is evident at higher values of `r data2_name`, which we examine further via residual diagnostics.
+
+## 2.5 Residual Diagnostics
+
+```{r residuals, echo = FALSE, fig.height=4, fig.width=6, fig.cap='Residuals of the fitted model'}
+
+# residuals
+dat$residuals <- residuals(lm_model)
+dat$fitted    <- fitted(lm_model)
+
+ggplot(dat, aes(x = fitted, y = residuals)) +
+  geom_point(shape = 16, size = 1, colour = adjustcolor(col_point, alpha.f = 0.5)) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = col_ref, linewidth = 0.6) +
+  labs(
+    x = "Predicted Attendance Rate (%)",
+    y = "Residuals",
+    title = "Residuals vs Fitted Values"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+The residual plot (Figure 5) shows residuals scattered around zero with no obvious systematic pattern or funnel shape, indicating that the linearity and constant-variance assumptions are reasonably satisfied. There are a few large negative residuals (data zones with unusually low attendance given their income deprivation level), which could be investigated further.
+
+Overall, the results of Section 2 demonstrate that income deprivation is the single strongest linear predictor of attendance among the variables considered, explaining approximately `r round(r_squared * 100, 0)`% of the variation. This complements the city-level differences found in Section 1 and suggests that socio-economic deprivation may be a key driver of the lower attendance rates observed in Glasgow. An important follow-up question is whether this relationship holds equally across regions — we investigate this in Section 3.

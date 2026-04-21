@@ -1,0 +1,164 @@
+---
+title: "An Analysis of School Attendance Rates across Scottish Data Zones"
+output:
+  pdf_document:
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+dat <- read.csv("scottishData.csv")
+library(ggplot2)
+library(dplyr)
+library(broom)
+
+# Create region variable
+dat$Region <- ifelse(dat$Council_area == "Glasgow City", "Glasgow",
+              ifelse(dat$Council_area == "City of Edinburgh", "Edinburgh", "Elsewhere"))
+dat$Region <- factor(dat$Region, levels = c("Glasgow", "Edinburgh", "Elsewhere"))
+
+# Unified colour palette
+col_gla  <- "#D6604D"
+col_edi  <- "#4393C3"
+col_else <- "#66C2A5"
+col_point <- "#525252"
+```
+
+# Section 3: A Further Investigation
+
+Sections 1 and 2 revealed that (i) Glasgow has significantly lower and more variable Attendance than Edinburgh, and (ii) Income_rate is the strongest single predictor of Attendance across all data zones. A natural question follows: **does the relationship between income deprivation and attendance differ across Glasgow, Edinburgh, and the rest of Scotland?** We investigate this by comparing distributions, fitting regional regression models, and formally testing for interaction effects.
+
+## 3.1 Regional Overview
+
+We first compare Attendance across the three regions visually and then test for differences using a one-way ANOVA.
+
+```{r boxplot_region, fig.height=4, fig.width=6, fig.cap='Distribution of Attendance across Glasgow, Edinburgh, and Elsewhere'}
+
+ggplot(dat, aes(x = Region, y = Attendance, fill = Region)) +
+  geom_boxplot(outlier.shape = 1, outlier.size = 1.5) +
+  scale_fill_manual(values = c("Glasgow" = col_gla, "Edinburgh" = col_edi, "Elsewhere" = col_else)) +
+  labs(x = "Region", y = "Attendance",
+       title = "Attendance by Region") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5), legend.position = "none")
+```
+
+```{r anova_region}
+
+# Summary statistics by region
+region_stats <- dat %>%
+  group_by(Region) %>%
+  summarise(N = n(),
+            Mean = round(mean(Attendance, na.rm = TRUE), 4),
+            SD   = round(sd(Attendance, na.rm = TRUE), 4),
+            .groups = "drop")
+
+knitr::kable(region_stats,
+             caption = "Descriptive statistics of Attendance by region.",
+             align = "c")
+
+# One-way ANOVA
+aov_result <- aov(Attendance ~ Region, data = dat)
+aov_summary <- summary(aov_result)
+f_stat <- round(aov_summary[[1]]$`F value`[1], 2)
+p_aov  <- aov_summary[[1]]$`Pr(>F)`[1]
+```
+
+Figure 6 shows that Glasgow has the lowest median Attendance and the widest spread, while Edinburgh and Elsewhere have similar, higher medians. A one-way ANOVA yields $F =$ `r f_stat` with $p$-value $=$ `r formatC(p_aov, format = "e", digits = 3)`, confirming that mean Attendance differs significantly across the three regions.
+
+## 3.2 Regional Correlation and Regression
+
+We now examine whether the Income_rate–Attendance relationship identified in Section 2 holds equally across all three regions.
+
+```{r correlation}
+
+# Pearson correlations by region
+cor_by_region <- sapply(split(dat, dat$Region), function(x)
+  round(cor(x$Attendance, x$Income_rate, method = "pearson"), 3))
+
+cor_results <- data.frame(
+  Region = names(cor_by_region),
+  Pearson_r = as.numeric(cor_by_region)
+)
+
+knitr::kable(cor_results,
+             caption = "Pearson correlation between Income\\_rate and Attendance by region.",
+             align = "c")
+```
+
+The correlations are negative in all three regions, confirming that income deprivation is universally associated with lower attendance. However, the strength varies: Glasgow ($r =$ `r cor_by_region["Glasgow"]`) shows a noticeably weaker association than Edinburgh ($r =$ `r cor_by_region["Edinburgh"]`) and Elsewhere ($r =$ `r cor_by_region["Elsewhere"]`).
+
+```{r linear_regression}
+
+# Fit separate models
+region_data <- split(dat, dat$Region)
+models <- lapply(region_data, function(x) lm(Attendance ~ Income_rate, data = x))
+
+intercepts <- sapply(models, function(m) coef(m)[1])
+slopes     <- sapply(models, function(m) coef(m)[2])
+r_sq       <- sapply(models, function(m) summary(m)$r.squared)
+
+reg_results <- data.frame(
+  Region    = names(models),
+  Intercept = round(intercepts, 3),
+  Slope     = round(slopes, 3),
+  R_squared = round(r_sq, 3)
+)
+
+knitr::kable(reg_results,
+             caption = "Regional regression models: Attendance $\\sim$ Income\\_rate.",
+             align = "c",
+             col.names = c("Region", "$\\hat{\\beta}_0$", "$\\hat{\\beta}_1$", "$R^2$"))
+```
+
+In Glasgow, income deprivation explains only `r round(r_sq["Glasgow"] * 100, 1)`% of the variance ($R^2 =$ `r round(r_sq["Glasgow"], 3)`), with a relatively shallow slope of `r round(slopes["Glasgow"], 3)`. By contrast, the slopes are steeper in Edinburgh (`r round(slopes["Edinburgh"], 3)`) and Elsewhere (`r round(slopes["Elsewhere"], 3)`), with $R^2$ values of `r round(r_sq["Edinburgh"], 3)` and `r round(r_sq["Elsewhere"], 3)` respectively. The scatterplot below illustrates these differences.
+
+```{r scatter, fig.height=4, fig.width=6, fig.cap='Regional regression lines for Attendance on Income\\_rate'}
+
+ggplot(dat, aes(x = Income_rate, y = Attendance, colour = Region)) +
+  geom_point(shape = 16, size = 1, alpha = 0.4) +
+  geom_smooth(method = "lm", se = TRUE, linewidth = 0.8, alpha = 0.15) +
+  scale_colour_manual(values = c("Glasgow" = col_gla, "Edinburgh" = col_edi, "Elsewhere" = col_else)) +
+  labs(x = "Income deprivation rate", y = "Attendance",
+       title = "Attendance vs Income Rate by Region") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+The three regression lines have noticeably different slopes: Glasgow's line is flatter, whereas Edinburgh and Elsewhere decline more steeply.
+
+## 3.3 Testing for Regional Differences in Slope
+
+To formally test whether the effect of Income_rate on Attendance differs by region, we fit an interaction model:
+
+$$\text{Attendance} = \beta_0 + \beta_1 \times \text{Income\_rate} + \beta_2 \times \text{Region} + \beta_3 \times (\text{Income\_rate} \times \text{Region}) + \varepsilon$$
+
+```{r interaction_model}
+
+# Interaction model
+int_model <- lm(Attendance ~ Income_rate * Region, data = dat)
+
+knitr::kable(tidy(int_model), digits = 4,
+             caption = "Interaction model: Attendance $\\sim$ Income\\_rate $\\times$ Region.")
+
+# ANOVA comparing additive vs interaction model
+add_model <- lm(Attendance ~ Income_rate + Region, data = dat)
+anova_int <- anova(add_model, int_model)
+f_int <- round(anova_int$F[2], 3)
+p_int <- anova_int$`Pr(>F)`[2]
+r2_int <- round(summary(int_model)$r.squared, 4)
+```
+
+The interaction terms test whether the slope of Income_rate differs significantly between regions. An $F$-test comparing the additive model (no interaction) against the interaction model yields $F =$ `r f_int` with $p =$ `r formatC(p_int, format = "e", digits = 3)`. Since $p < 0.05$, the interaction is statistically significant: **the effect of income deprivation on attendance is not uniform across regions.** The full interaction model explains `r round(r2_int * 100, 2)`% of the variance in Attendance.
+
+In particular, the significantly positive interaction coefficient for Glasgow indicates that Glasgow's slope is less steep (less negative) than the baseline category, consistent with the weaker relationship observed in the regional regressions above.
+
+## 3.4 Summary of Section 3
+
+The analysis reveals three key findings:
+
+1. Attendance differs significantly across Glasgow, Edinburgh, and Elsewhere (ANOVA $p <$ 0.001).
+2. Income deprivation is negatively associated with attendance in all three regions, but the relationship is substantially weaker in Glasgow ($R^2 \approx$ `r round(r_sq["Glasgow"], 2)`) than in Edinburgh ($R^2 \approx$ `r round(r_sq["Edinburgh"], 2)`) or Elsewhere ($R^2 \approx$ `r round(r_sq["Elsewhere"], 2)`).
+3. A formal interaction test confirms that the slope of Income_rate on Attendance differs significantly by region ($p =$ `r formatC(p_int, format = "e", digits = 3)`).
+
+These results suggest that while income deprivation is an important universal predictor of attendance, **its explanatory power varies geographically**. In Glasgow, other unmeasured factors — such as local education policies, community-level interventions, or housing conditions — may play a comparatively larger role in shaping attendance outcomes. Future work could explore multiple regression with additional predictors to explain the residual variation in Glasgow.

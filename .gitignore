@@ -1,0 +1,11 @@
+# R generated files
+*.pdf
+*.tex
+*.knit.md
+*.utf8.md
+*.log
+*.aux
+*.out
+.Rhistory
+.RData
+.Rproj.user/

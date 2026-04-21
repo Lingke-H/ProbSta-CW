@@ -1,0 +1,191 @@
+---
+title: "An Analysis of School Attendance Rates across Scottish Data Zones"
+date: ''
+output:
+  pdf_document: default
+  bookdown::html_document2:
+    number_sections: false
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+dat <- read.csv("scottishData.csv")
+library(ggplot2)
+library(dplyr)
+
+glasgow   <- subset(dat, Council_area == "Glasgow City")
+edinburgh <- subset(dat, Council_area == "City of Edinburgh")
+
+# Unified colour palette
+col_gla <- "#D6604D"
+col_edi <- "#4393C3"
+```
+
+
+# Section 1: Summary Statistics and Hypothesis Test
+
+In this section, we compare the distribution of Attendance rates between Glasgow ($n = 100$) and Edinburgh ($n = 100$), the two largest cities in Scotland, using graphical summaries, descriptive statistics, and formal hypothesis tests.
+
+## 1.1 Exploratory Visualisation
+
+```{r boxplot, echo=FALSE, fig.height=4, fig.width=6, fig.cap='Side-by-side boxplots of Attendance for Glasgow and Edinburgh'}
+
+dat_two <- subset(dat, Council_area %in% c("Glasgow City", "City of Edinburgh"))
+
+ggplot(dat_two, aes(x = Council_area, y = Attendance, fill = Council_area)) +
+  geom_boxplot(outlier.shape = 1, outlier.size = 1.5) +
+  scale_fill_manual(values = c("City of Edinburgh" = col_edi, "Glasgow City" = col_gla)) +
+  labs(
+    x = "City",
+    y = "Attendance",
+    title = "Attendance by City"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    legend.position = "none"
+  )
+```
+
+Figure 1 shows that Edinburgh has a noticeably higher median Attendance than Glasgow. Glasgow also exhibits greater spread, with several low-lying outliers, suggesting that some Glasgow data zones have particularly poor attendance.
+
+```{r histogram, echo=FALSE, fig.height=4, fig.width=6, fig.cap='Histograms of Attendance for Glasgow and Edinburgh'}
+
+ggplot(dat_two, aes(x = Attendance, fill = Council_area)) +
+  geom_histogram(bins = 20, alpha = 0.7, color = "white") +
+  scale_fill_manual(values = c("City of Edinburgh" = col_edi, "Glasgow City" = col_gla)) +
+  facet_wrap(~ Council_area, ncol = 2) +
+  labs(
+    x = "Attendance",
+    y = "Frequency",
+    title = "Distribution of Attendance by City"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    legend.position = "none"
+  )
+```
+
+Figure 2 reinforces this picture: Edinburgh's distribution is tightly concentrated at higher values, whereas Glasgow's histogram is wider and displays a noticeable left skew. These visual patterns motivate a formal comparison using summary statistics and hypothesis tests below.
+
+## 1.2 Descriptive Statistics
+
+```{r mean_var, echo = FALSE}
+
+n_gla <- sum(!is.na(glasgow$Attendance))
+n_edi <- sum(!is.na(edinburgh$Attendance))
+mean_gla <- mean(glasgow$Attendance, na.rm = TRUE)
+mean_edi <- mean(edinburgh$Attendance, na.rm = TRUE)
+var_gla  <- var(glasgow$Attendance, na.rm = TRUE)
+var_edi  <- var(edinburgh$Attendance, na.rm = TRUE)
+
+sd_gla   <- sd(glasgow$Attendance, na.rm = TRUE)
+sd_edi   <- sd(edinburgh$Attendance, na.rm = TRUE)
+
+stats_table <- data.frame(
+  City     = c("Glasgow", "Edinburgh"),
+  N        = c(n_gla, n_edi),
+  Mean     = round(c(mean_gla, mean_edi), 5),
+  SD       = round(c(sd_gla, sd_edi), 5),
+  Variance = round(c(var_gla, var_edi), 7)
+)
+
+knitr::kable(stats_table,
+             caption = "Sample means and variances of Attendance for Glasgow and Edinburgh.",
+             align = "c")
+```
+
+Table 1 confirms the visual impression: Glasgow's mean Attendance (`r round(mean_gla, 4)`) is substantially lower than Edinburgh's (`r round(mean_edi, 4)`), and Glasgow's variance is roughly `r round(var_gla / var_edi, 1)` times larger. These differences suggest that not only does Glasgow have lower average attendance, but its data zones are also far more heterogeneous.
+
+## 1.3 Confidence Intervals
+
+```{r ci_mean, echo = FALSE}
+
+# 95% CI for means using t-distribution
+ci_mean_gla <- mean_gla + c(-1, 1) * qt(0.975, df = n_gla - 1) * sqrt(var_gla / n_gla)
+ci_mean_edi <- mean_edi + c(-1, 1) * qt(0.975, df = n_edi - 1) * sqrt(var_edi / n_edi)
+
+ci_mean_table <- data.frame(
+  City  = c("Glasgow", "Edinburgh"),
+  Lower = round(c(ci_mean_gla[1], ci_mean_edi[1]), 5),
+  Upper = round(c(ci_mean_gla[2], ci_mean_edi[2]), 5)
+)
+
+knitr::kable(ci_mean_table,
+             caption = "95% confidence intervals for the mean of Attendance.",
+             align = "c",
+             col.names = c("City", "2.5%", "97.5%"))
+```
+
+The 95% confidence intervals for the mean (Table 2) do not overlap, providing initial evidence of a significant difference. These intervals are based on the $t$-distribution; given the large sample sizes ($n = 100$), the Central Limit Theorem supports the normality assumption.
+
+```{r ci_var, echo = FALSE}
+
+# 95% CI for variance using chi-squared distribution
+ci_var_gla <- c((n_gla - 1) * var_gla / qchisq(0.975, df = n_gla - 1),
+                (n_gla - 1) * var_gla / qchisq(0.025, df = n_gla - 1))
+ci_var_edi <- c((n_edi - 1) * var_edi / qchisq(0.975, df = n_edi - 1),
+                (n_edi - 1) * var_edi / qchisq(0.025, df = n_edi - 1))
+
+ci_var_table <- data.frame(
+  City  = c("Glasgow", "Edinburgh"),
+  Lower = round(c(ci_var_gla[1], ci_var_edi[1]), 7),
+  Upper = round(c(ci_var_gla[2], ci_var_edi[2]), 7)
+)
+
+knitr::kable(ci_var_table,
+             caption = "95% confidence intervals for the variance of Attendance.",
+             align = "c",
+             col.names = c("City", "2.5%", "97.5%"))
+```
+
+The 95% confidence intervals for the variance (Table 3) show that Glasgow's interval lies entirely above Edinburgh's, confirming that the dispersion in Glasgow is significantly greater. These intervals rely on the $\chi^2$ distribution and hence assume approximate normality.
+
+Taken together, the non-overlapping confidence intervals for both the mean and the variance strongly suggest real differences between the two cities. We now verify this with formal hypothesis tests.
+
+## 1.4 Hypothesis Tests
+
+**Test for difference in means.**
+
+```{r t_test, echo = FALSE}
+
+t_result <- t.test(glasgow$Attendance, edinburgh$Attendance, var.equal = FALSE)
+
+t_table <- data.frame(
+  Statistic = round(t_result$statistic, 4),
+  df        = round(t_result$parameter, 2),
+  p_value   = formatC(t_result$p.value, format = "e", digits = 4)
+)
+
+knitr::kable(t_table,
+             caption = "Welch's two-sample t-test for difference in mean Attendance.",
+             align = "c",
+             col.names = c("t-statistic", "df", "p-value"))
+```
+
+We test $H_0: \mu_{Glasgow} = \mu_{Edinburgh}$ against $H_1: \mu_{Glasgow} \neq \mu_{Edinburgh}$ using Welch's two-sample $t$-test, which does not require equal variances. The test yields $t =$ `r round(t_result$statistic, 3)` with $p$-value $=$ `r formatC(t_result$p.value, format = "e", digits = 3)`. Since $p < 0.05$, we reject $H_0$ and conclude that Glasgow's mean Attendance is significantly lower than Edinburgh's.
+
+**Test for difference in variability.**
+
+```{r f_test, echo = FALSE}
+
+f_result <- var.test(glasgow$Attendance, edinburgh$Attendance)
+
+f_table <- data.frame(
+  Statistic = round(f_result$statistic, 4),
+  df1       = f_result$parameter[1],
+  df2       = f_result$parameter[2],
+  p_value   = formatC(f_result$p.value, format = "e", digits = 4)
+)
+
+knitr::kable(f_table,
+             caption = "F-test for equality of variances of Attendance.",
+             align = "c",
+             col.names = c("F-statistic", "df1", "df2", "p-value"))
+```
+
+We test $H_0: \sigma^2_{Glasgow} = \sigma^2_{Edinburgh}$ against $H_1: \sigma^2_{Glasgow} \neq \sigma^2_{Edinburgh}$ using an $F$-test (which assumes normality). The result is $F =$ `r round(f_result$statistic, 3)` with $p$-value $=$ `r formatC(f_result$p.value, format = "e", digits = 3)`. Since $p < 0.05$, we reject $H_0$ and conclude that Glasgow's Attendance is significantly more variable than Edinburgh's.
+
+In summary, both the central tendency and the spread of Attendance differ significantly between Glasgow and Edinburgh. Glasgow has both lower and more variable attendance rates, which may reflect underlying socio-economic disparities. These findings motivate a deeper investigation in Section 2, where we explore which factors are most strongly associated with Attendance across all Scottish data zones.
