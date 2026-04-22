@@ -1,0 +1,141 @@
+---
+title: "Workshop_Two sample hypothesis testing"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+We're going to use the lecturer age guesses dataset we used in computer class 2 again, so load it in for the 4 lecturers. In week 2 we used the data to compare the guesses with specific values, however today we're going to compare the guesses for different lecturers ie looking at 2 samples.
+
+```{r load data}
+Katie_S_age_guesses <- read.csv('lecturer_data/Katie_S_age_guesses.csv')
+Kirsty_B_age_guesses <- read.csv('lecturer_data/Kirsty_B_age_guesses.csv')
+Theo_K_age_guesses <- read.csv('lecturer_data/Theo_K_age_guesses.csv')
+Pete_N_age_guesses <- read.csv('lecturer_data/Pete_N_age_guesses.csv')
+```
+
+
+To begin spend around 10 minutes just visually comparing the data, you could output summary statistics and compare or plot graphs that allow comparison.
+
+Whilst this visual comparison is useful we want to make more statistically rigorous statements and that is why we will perform hypothesis testing.
+There is no right or wrong part for this initial comparison, you could do a boxplot:
+
+```{r boxplots}
+# Applying boxplot function 
+boxplot(Katie_S_age_guesses$guess,Kirsty_B_age_guesses$guess,Theo_K_age_guesses$guess,Pete_N_age_guesses$guess,names = c("Katie", "Kirsty", "Theo", "Pete"),
+        main = "Boxplots of age  guesses for each lecturer",
+        xlab = "lecturer",
+        ylab = "age guesses",
+        col = c("lightblue", "lightpink","lightgreen", "lightyellow"))
+
+```
+
+Plot scatter plots and look at correlation (as the rows in the data correspond to a group this makes sense)
+```{r scatter}
+cor(Kirsty_B_age_guesses$guess, Theo_K_age_guesses$guess)
+plot(Kirsty_B_age_guesses$guess, Theo_K_age_guesses$guess, pch=19, cex=3)
+```
+
+ Or perhaps overlay histograms
+``` {r hist}
+hist(Kirsty_B_age_guesses$guess, col =rgb(1,0,0,0.5), breaks=10) # Plot 1st histogram using a transparent color
+hist(Theo_K_age_guesses$guess, col =rgb(0,0,1,0.5),breaks=10, add = TRUE) #plot swcond also with transparent colour
+```
+
+
+
+To begin we are going to compare the data for Kirsty and Theo as they are closest in age so we want to test if there is evidence that the population mean guess for their ages is equal or different, written formally $H_0: \mu_K=\mu_T$ vs $H_1: \mu_K\neq \mu_T$, where $\mu_K$ and $\mu_T$ are the population mean guess for Kirsty and Theo respectively.
+
+
+
+### Independent samples
+
+To begin we are going to assume our sample for Kirsty and Theo are independent (consider if this seems valid).
+
+a) Assume $\sigma_K=4$ and $\sigma_T=3$ (the population standard deviation for Kirsty and Theo age guesses respectively) are given and known,
+ 
+    i) Perform the hypothesis test, at 5% significance level (you will need to calculate the test statistic, find the critical value and compare).
+
+``` {r part i}
+
+```
+    
+    ii) Calculate the p-value for the test.
+``` {r pvalue}
+
+```
+    iii) Calculate the 95% confidence interval.
+```{r confidence interval}
+
+```
+    iv) Check your answers using the inbuilt r function `z.test` from the package `BSDA` which you will need to install. You may need to use the help bar to look up what you input into `z.test`.
+    
+We can check our answers using an inbuilt r function and we can see our above answers match!
+```{r z package, results='hide',warning=FALSE,echo=FALSE,message=FALSE}
+#library(BSDA) make sure you have installed BDSA and then loaded it using the library function
+library(BSDA)
+```
+
+``` {r z test function}
+
+```
+
+
+ 
+ b) Now we are going to repeat i), ii) and iii) but assuming $\sigma_K$ and $\sigma_T$ are not known but are assumed equal. We can repeat iv) using the function `t.test`, you will need to set `var.equal=TRUE`.
+ 
+``` {r part b}
+
+```
+
+``` {r pvalue 2}
+
+```
+
+```{r confidence interval 2}
+
+```
+      
+``` {r t test function}
+
+```
+
+### Paired samples 
+We have treated the samples as independent however we know this is false as every group submitted a guess for both lecturers ages and so there is dependence between the same groups guesses e.g. one group may be very flattering and more likely for all their guesses to be lower. So naturally the data pairs between the groups guesses, e.g. group 1's guess for Kirsty is 37 and Theo is 35 and that would be a pair
+
+
+c) We now want to perform a paired test to compare the guesses between Kirsty and Theo, our hypotheses are $H_0:\mu_d=0$ and $H_1:\mu_d\neq 0$, where $\mu_d$ is the population mean difference between paired guesses for Kirsty and Theo. 
+      
+      i) Create a vector of differences between Kirsty and Theo age guesses using `diff <- Kirsty_B_age_guesses$guess-Theo_K_age_guesses$guess` and then plot a histogram of these differences.
+    ii) Perform the hypothesis test, at 5% significance level (you will need to calculate the test statistic, find the critical value and compare).
+``` {r paired set up}
+
+```
+    iii) Calculate the p-value for the test.
+``` {r pvalue 3}
+
+```
+    iv) Calculate the 95% confidence interval.
+```{r confidence interval 3}
+
+```
+      v) Check your answers using the inbuilt r function `t.test`, you will need to set `paired=TRUE`.
+      
+``` {r paired test function}
+#paired = TRUE
+
+```
+
+
+### Finally 
+These are some extra questions you could have a think about, as they are open ended there aren't solutions to this part.
+
+Look at the confidence intervals you have produced, how do they relate to the tests you have performed.
+
+Pick another combination of lecturers and perform a hypothesis test to compare the difference in guess for these, perhaps try a one sided test this time, choose the test you believe is better for the situation.  
+
+You could also have a go at choosing an alternative hypothesis and calculate the power for the 3 cases you have performed.

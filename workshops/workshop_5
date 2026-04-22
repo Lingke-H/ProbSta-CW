@@ -1,0 +1,157 @@
+---
+title: "Workshop: Correlation and Linear regression in R "
+output: html_document
+date: ""
+---
+
+# Correlation and covariance
+
+### Overview
+
+This week we are going to continue looking at the Lenton rainfall data from last week. In the first section you will download daily rainfall data from a *second* location in the UK, compute sample covariance and correlation, and consider whether there is evidence of non-zero correlation.  Then we will consider the distribution of data from a single location and use whether it is consistent with some common continuous distributions. 
+
+## Correlation and covariance of daily rainfall in two locations
+
+Hopefully you have a .csv file with the Lenton data from last week, otherwise please follow instructions from the Week 4 workshop to download that now. 
+
+* Navigate to https://nrfa.ceh.ac.uk/data/search and download data from a *second* location in the UK that is of interest to you. 
+
+```{r data-load, echo = TRUE, results = 'hide',warning=FALSE}
+# library used to read csv files
+library(readr,warn.conflicts=F, quietly=T)
+# library for manipulating data frames
+library(dplyr, warn.conflicts=F, quietly=T)
+
+
+lenton.rainfall <- read_csv("28035_cdr-lenton.csv", col_names = c('date', 'rf'), skip = 20, show_col_types = FALSE)
+cambridge.rainfall <- read_csv("33016-cdr-cambridge.csv",  col_names = c('date', 'rf'), skip = 20, show_col_types = FALSE)
+
+# drop columns we don't need
+lenton.rainfall <- lenton.rainfall[ -c(3) ]
+cambridge.rainfall <- cambridge.rainfall[ -c(3) ]
+```
+
+We want to combine these data into a single data frame, matching the entries across locations for each date, so that we have columns date, Lenton rainfall and Cambridge rainfall. As we are interested in correlations between the two samples, we will also remove lines were data is missing from one location. 
+
+```{r match-data, echo = TRUE}
+# merge data
+data <- full_join(lenton.rainfall, cambridge.rainfall, by='date')
+names(data) <- c('date', 'lenton.rf', 'cambridge.rf')
+# remove missing data
+data <- data[complete.cases(data), ]
+```
+
+As for other worksheets, it is a good idea to first visualise your data. 
+
+```{r exploratory, results = TRUE}
+par(mfrow = c(1,3))
+hist(data$lenton.rf,breaks = seq(from = 0, to = 65, by = 1), xlab = "Daily rainfall (mm)", main = "Lenton")
+hist(data$cambridge.rf, breaks = seq(from = 0, to = 65, by = 1),  xlab = "Daily rainfall (mm)", main = "Cambridge")
+plot(data$lenton.rf, data$cambridge.rf,xlab = "Lenton daily rf (mm)", ylab = "Cambridge daily rf (mm)")
+```
+
+We see that there are many days with little rainfall but a notable tail in the distribution of daily rainfall indicating some very rainy days. It looks like there may be a some correlation between rainfall in each location, but it is hard to tell how strong this is due to the densely clustered data. 
+
+* Compute the sample covariance using the formula $s_{xy} = E[XY] - E[X]E[Y]$. 
+
+```{r cov-manual, echo = TRUE}
+# sample covariance by hand
+# we will use the formula sxy = E[XY] - E[X]E[Y]
+
+
+```
+
+* Check your answer using the r function `cov`. 
+
+```{r cov-func, echo = TRUE}
+
+```
+
+* Compute the sample Pearson correlation, checking your answer using the function `cor`. 
+
+```{r r-pearson, echo = TRUE}
+#Pearson correlation by hand      
+
+
+# Pearson correlation using R
+
+```
+
+
+We want to consider whether this correlation is significant for $\alpha = 0.05$. If the data is not normally distributed we use the Spearman correlation, which is computed using the rank of the data, $rank_x, rank_y$, and defined by $r_s = s_{rank_x rank_y}/(s_{rank_x}s_{rank_y})$ for the general case when there may be ties.
+
+* Compute the Spearman correlation. Are the Pearson and Spearman correlation coefficients different in this case? (Tip: you can use `rank(data$lenton.rf)` to find the rank of the Lenton data).
+
+```{r r-spearman, echo = TRUE}
+
+
+# full formula rs = cov(rankx, ranky)/(s_rankx*s_ranky)
+
+
+```
+
+Note that as there are many ties in the ranks the simple formula in the notes produces a different answer and is inaccurate:
+
+```{r r-spearman-formula, echo = TRUE}
+# simple formula
+
+```
+
+* Using an appropriate measure of correlation, use the R function `cor.test` function to compute the correlation and the p-value for the hypothesis that the correlation is non-zero. 
+
+
+```{r cor-test, echo = TRUE, results = TRUE,warning=FALSE}
+
+```
+
+
+# Linear regression
+
+
+## The data
+Load in the diamonds data set (saved in the data set tab on the computer class section of Moodle).
+
+```{r load data,warning=FALSE,message=FALSE}
+library(readr)
+diamonds <- read_csv("diamonds.csv")
+```
+
+First of have an explore with the data- creating visualizations. We are going to fit a regression line to predict price from carat size so these may be two variables you particularly want to explore.
+
+
+We can explore the data set in many different ways. As we are going to do regression between carat and price of the diamonds then it seems sensible to look at a scatter plot between these variables, we would hope to see some kind of linear relationship which would imply a linear model is sensible
+```{r explore data}
+
+```
+
+
+Define the variables $x$ and $y$ as below, $x$ is now a vector of the carat size and $y$ is a vector of price.
+```{r set up}
+
+```
+
+## Fitting the model
+
+Find the values for $\beta_0$ and $\beta_1$, ie the intercept and slope of your linear regression model.
+
+```{r fit linear model}
+
+
+```
+
+
+Once you have found the intercept and slope run the below code. This code uses the R inbuilt function to perform linear regression, use the help function to explore the function ```lm```. In the summary can you spot the values you have calculated?
+```{r inbuilt function}
+
+```
+
+For every $x$ value in the data (i.e. every carat size), we can use the model to predict the price, we can then see how the predicted price (red line below) differs to the actual prices
+```{r predictions}
+
+```
+
+Using your model calculate the residuals and plot these. Do the 3 assumptions needed to fit a linear regression model appear valid?
+
+```{r residuals}
+
+```

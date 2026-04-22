@@ -1,0 +1,135 @@
+---
+title: "Workshop: Variance and Proportions"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+We are going to look for rainfall data collected in Lenton (just by university park), this is our sample that we hope/assume is representative of the population (whole of UK) rainfall.
+We need to download this data from https://nrfa.ceh.ac.uk/data/station/meanflow/28035 (we can't download this data directly from Moodle due to the data license).  Toward the bottom left click `Download catchment daily rainfall data`, you then need to complete a form with four questions (your answers are likely to be university student, Teaching/Education, other and other) and accept the terms and conditions (which are worth having a quick read through to see how real data is often used and licensed). Once you have completed this the data should download.
+
+If you look at this data by opening it in excel you can see it isn't in the neat form you are used to working in. The top of the data isn't actual data but information on the dataset that we won't want to load into R. And so we can run
+```{r set up, warning=FALSE, message=FALSE}
+library(readr)
+rainfall <- read_csv("28035_cdr.csv", col_names = c('date', 'rf'), skip = 20)
+```
+this skips the first 20 rows, and also adds columns names 'date' and 'rf' (standing for rainfall).
+
+It may be interesting to group our data by year or month and so the below code creates new columns that assign a variable for the year and the month the data was collected
+``` {r date}
+rainfall$year <- format(as.Date(rainfall$date, format="%d/%m/%Y"),"%Y")
+rainfall$month <- format(as.Date(rainfall$date, format="%d/%m/%Y"),"%m")
+```
+
+Some example of then creating datasets for particular years (2012 and 1990) or particular months (Febuary and July)
+``` {r date groups}
+rainfall_2012 <- rainfall[rainfall$year=='2012',]$rf
+rainfall_1990 <- rainfall[rainfall$year=='1990',]$rf
+
+rainfall_Feb <- rainfall[rainfall$month=='02',]$rf
+rainfall_Jul <- rainfall[rainfall$month=='07',]$rf
+```
+
+Have a go at visually exploring this dataset, you could plot rainfall for a certain year, compare two years or months or something else!
+
+Some ideas of the types of plots you may produce
+```{r exploring data}
+plot(rainfall_2012, type='l')
+
+hist(rainfall_2012,col =rgb(1,0,0,0.5), breaks=seq(0,50,1))
+hist(rainfall_1990, add=TRUE, col =rgb(0,0,1,0.5), breaks=seq(0,50,1))
+
+
+boxplot(rainfall_1990, at=0.5, xlim=c(0,2), names=c('1990'), main='boxplot for rainfall in 1990 (left) and 2012 (right)')
+boxplot(rainfall_2012, add=TRUE, at=1.5, names='2012')
+```
+
+The daily rainfall plot for 2012 is hard to see any trends as it is so noisy, and it is being dominated by the more extreme values.
+The histogram has 2012 in red and 1990 in blue, but doesn't show much due to a high overlap. The boxplot's look very similar although again the extreme values are dominating it so perhaps it would be better to produce a more zoomed in version of this.
+
+### Variance
+
+With climate change it is not just interesting to see if the mean rainfall has changed (which you could have a go at using methods from computer class week 3), but also if the variability in the rainfall has changed.
+
+a) Experts say if the variability of daily rainfall is over 12.25 in 2012 there is evidence of climate change. 
+      
+      i) Perform a hypothesis test, make sure to also write yout hypotheses down.
+      
+``` {r part i}
+
+```
+
+      ii) Calculate the 95% confidence interval for the variance of daily rainfall
+```{r confidence interval}
+
+```
+
+      iii) We can test our answers using the inbuilt function varTest from the library `EnvStats`, you will need to install this package and load the library in and then run `varTest(rainfall_2012, sigma.squared=12.25, alternative='greater')`
+      
+```{r z package, results='hide',warning=FALSE,echo=FALSE,message=FALSE}
+#library(EnvStats) make sure you have installed EnvStats and then loaded it using the library function
+library(EnvStats)
+```
+
+``` {r z test function}
+
+
+```
+
+      
+b) Now we want to compare the variance for 1990 and 2012 to see if there is evidence of a difference. Repeat steps i) but now for this two sample test. We can check our answers with the inbuilt R function `var.test(rainfall_1990, rainfall_2012, alternative = "two.sided")`, note this function isn't the same as the previous due to the ., this is relatively confusing and is why it's important to think what you call variable names and functions, to try and avoid such similiar things meaning different things!
+
+  $H_0:$ vs $H_1:$
+
+```{r hypothesis testing Ftest}
+
+```
+
+
+
+We can check our answers using an inbuilt r function and we can see our above answers match!
+``` {r f test inbuilt test function}
+
+```
+
+
+
+
+### Proportions
+
+If rainfall is over 10mm then that day is considered a flood risk, we can convert our data to capture this
+
+```{r data manipulation}
+flood_1990 <- rainfall_1990>10
+flood_2012 <- rainfall_2012>10
+```
+
+These vectors comprise of TRUE and FALSE corresponding to if the day is a flood risk day. The total flood risks in 2012 can be calculated by `sum(flood_2012)`.
+
+
+c) Remembering back to 2012, it felt like there were over a months worth of flood risk (i.e 30/365). Perform a hypothesis test,  to test if there is evidence that the proportion of flood risk days is over 30/365, make sure to also write your hypotheses down.
+
+ $H_0:$ vs $H_1:$
+
+```{r hypothesis testing proptest}
+
+
+```
+
+d) Due to climate change it seems likely there will be a difference in the proportion of flood risk days in 2012 and 1990, perform a two sample test to test this hypothesis, remember to write down your hypotheses.
+
+```{r hypothesis testing prop 2test}
+
+
+```
+
+
+### Finally 
+
+These are some extra questions you could have a think about, as they are open ended there aren't solutions to this part.
+
+This dataset is very interesting, spend some time further exploring it, you could for example: perform tests on population means like we have done previously, compare different years then 2012 and 1990 or compare differences in months.

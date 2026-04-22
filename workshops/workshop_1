@@ -1,0 +1,161 @@
+---
+title: "Workshop: Confidence intervals"
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+## Central Limit Theorem - Dice Example
+
+In a particular dice game, $N=500$ players roll a die once. The
+distribution of scores is shown in the histogram below. This is an
+example of a discrete uniform distribution. The red dots indicate the
+probability $1/6$ associated with each score.
+
+```{r}
+score=sample(1:6,500,replace=TRUE) # randomly sample 500 numbers from the vector 1,2,3,4,5,6
+hist(score,breaks=seq(0.5,6.5),freq=FALSE) # plot a histogram
+points(c(1:6),rep(1/6,6),col=2) # add dots with x-values 1 to 6 and y-values 1/6
+```
+
+Now suppose that each player's score is the sum of two dice. The
+distribution of scores is shown in the histogram below. This is an
+example of a triangular distribution. That is, $X$ the total from two
+rolls of a dice satisfies\
+$$ P(X=x) = \frac{\min\{x-1, 13-x \}}{36} \qquad (x=2,3,\ldots, 12). $$\
+The red dots indicate the probability of each score (assuming the dice
+rolls are independent).
+
+```{r}
+score=sample(1:6,500,replace=TRUE)+sample(1:6,500,replace=TRUE) # the players scores sampled at random
+hist(score,breaks=seq(1.5,12.5),ylim=c(0,0.2),freq=FALSE) # plot a histogram
+points(c(2:12),c(1:6,5:1)/36,col=2) # add dots to show the theoretical proabilities
+```
+
+Now suppose each player's score is the sum of five dice. The
+distribution of scores is shown in the histogram below.
+
+```{r}
+score=sample(1:6,500,replace=TRUE)
+for (i in 2:5){
+  score=score+sample(1:6,500,replace=TRUE)
+}
+hist(score,seq(4.5,30.5),freq=FALSE)
+```
+
+Use the central limit theorem to add red dots indicating the approximate
+probability of each score.
+
+```{r}
+
+```
+
+## Population and samples - Confidence Intervals
+
+A bottling machine is used to fill bottles of juice. The machine can be
+adapted to deliver different mean volumes, in $ml$, of juice. However,
+it is known that whatever the mean setting is, the variance for the
+amount of juice delivered into a bottle is $1\, ml^2$.
+
+Suppose that the machine is set to deliver $\mu=750 \, ml$.
+
+The juice is sold in crates of 24 bottles. The following `R` code:
+
+-   Simulates the volume in $n=24$ bottles.\
+-   Calculates a $95\%$ confidence interval:
+    $\bar{y} \pm 1.96 \times \sqrt{1/24}$.
+
+```{r}
+y=rnorm(24,750,1)
+CI=mean(y)+qnorm(0.975)*sqrt(1/24)*c(-1,1) 
+CI
+```
+
+-   Does your confidence interval include 750 (the **true** population
+    mean)?\
+-   What is the probability the confidence interval contains 750?
+
+The following `R` code:
+
+-   Generates 100 samples (crates of 24 bottles);\
+-   Calculates a $95\%$ confidence interval for $\mu$;\
+-   Plots the confidence intervals, highlighting in red those which do
+    not contain 750.
+
+```{r}
+lowCI=rep(NA,100)
+highCI=rep(NA,100)
+muINC=rep(0,100)
+for(i in 1:100)
+{
+  y=rnorm(24,750,1)
+  lowCI[i]=mean(y)-qnorm(0.975)*sqrt(1/24) 
+  highCI[i]=mean(y)+qnorm(0.975)*sqrt(1/24)  
+  if((lowCI[i]<750)&(highCI[i]>750)) muINC[i]=1
+}
+plot(NULL,xlab="Sample",ylab="Confidence Interval",xlim=c(0,100),ylim=c(min(lowCI),max(highCI)))
+for(i in 1:100) 
+{
+  lines(c(i,i),c(lowCI[i],highCI[i]),col=2-muINC[i])
+}
+abline(h=750,col="seagreen1")
+```
+
+-   How many times is $750$ not included in the $95\%$ confidence
+    interval?\
+-   How many times do you expect $750$ not to be included in the $95\%$
+    confidence interval, in 100 samples?\
+-   Change the confidence level. For example, $80\%$, $90\%$ and/or
+    $99\%$ confidence intervals.
+
+Suppose now that the bottling machine is reset and let $\mu$ denote the
+mean volume of juice delivered after resetting the machine. In the
+example, below $\mu$ is unknown but close to $500 \, ml$. This
+corresponds to the bottling machine being reset to have a mean of
+$500 \, ml$ but that the resetting process does not result in a mean
+exactly equal to the target of $500 \, ml$.
+
+```{r}
+set.seed(2207) 
+mu=round(rnorm(1,500,0.5),2) # Value of mu from resetting machine.
+```
+
+The bottling machine is used to fill 10 bottles whose volume is
+measured. The outcome of the sample is given by $x$:
+
+```{r}
+x=round(rnorm(10,mu,1),4)
+x
+```
+
+Let $\bar{X}$ denote the distribution of the sample mean from the 10
+bottles in the sample. Then:\
+$$ \bar{X} \sim N \left( \mu, \frac{1}{10} \right). $$
+
+A $95\%$ confidence interval for $\mu$ is given by\
+$$ \bar{x} \pm z_{0.975} \sqrt{\frac{1}{10}} = \bar{x} \pm 1.96 \sqrt{0.1}. $$
+
+A $95 \%$ confidence interval for $\mu$:
+
+```{r}
+CI=mean(x)+qnorm(0.975)*sqrt(0.1)*c(-1,1) 
+CI 
+```
+
+Construct and plot $5 i \%$ $(i=1,2,\ldots,19)$ confidence intervals for
+$\mu$. The outline of the `R` code is provided below.
+
+-   Calculate the lower and upper values of the confidence interval for
+    each value of $\alpha =0.05,0.1,\ldots,0.95$.\
+-   Plot a horizontal line at 500, the target value for $\mu$.
+
+```{r}
+
+
+```
+
+You should find that 500 belongs to the confidence interval for larger
+values of $\alpha$ but not for smaller values of $\alpha$. This is
+something which will be considered further in the Spring Semester along
+with is it reasonable to assume that $\mu =500$?
