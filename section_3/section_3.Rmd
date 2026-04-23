@@ -21,12 +21,12 @@ edinburgh <- subset(dat, Region == "Edinburgh")
 elsewhere <- subset(dat, Region == "Elsewhere")
 
 # Unified colour palette
-col_gla   <- "#D6604D"
-col_edi   <- "#4393C3"
-col_else  <- "#66C2A5"
-col_point <- "#525252"
-col_line  <- "#2166AC"
-col_ref   <- "#878787"
+col_gla   <- "#D6604D"   # terracotta  — Glasgow
+col_edi   <- "#4393C3"   # steel blue  — Edinburgh
+col_else  <- "#66C2A5"   # mint green  — Elsewhere
+col_point <- "#525252"   # slate gray  — scatter points
+col_line  <- "#2166AC"   # deep blue   — regression line
+col_ref   <- "#878787"   # medium gray — reference line
 ```
 
 
@@ -40,7 +40,7 @@ Sections 1 and 2 revealed that (i) Glasgow has significantly lower and more vari
 
 boxplot(glasgow$Attendance, edinburgh$Attendance, elsewhere$Attendance,
         names = c("Glasgow", "Edinburgh", "Elsewhere"),
-        col = c(adjustcolor(col_gla, 0.6), adjustcolor(col_edi, 0.6), adjustcolor(col_else, 0.6)),
+        col = c(adjustcolor(col_gla), adjustcolor(col_edi), adjustcolor(col_else)),
         border = c(col_gla, col_edi, col_else),
         ylab = "Attendance (proportion)",
         main = "Attendance by Region",
@@ -173,9 +173,9 @@ The slope in Glasgow (`r round(slopes[1], 3)`) is shallower than in Edinburgh (`
 
 plot(dat$Income_rate, dat$Attendance,
      pch = 16, cex = 0.4,
-     col = ifelse(dat$Region == "Glasgow", adjustcolor(col_gla, 0.5),
-           ifelse(dat$Region == "Edinburgh", adjustcolor(col_edi, 0.5),
-                  adjustcolor(col_else, 0.5))),
+     col = ifelse(dat$Region == "Glasgow", adjustcolor(col_gla),
+           ifelse(dat$Region == "Edinburgh", adjustcolor(col_edi),
+                  adjustcolor(col_else))),
      xlab = "Income deprivation rate",
      ylab = "Attendance (proportion)",
      main = "Attendance vs Income Rate by Region")

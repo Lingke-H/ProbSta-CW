@@ -16,8 +16,12 @@ glasgow   <- subset(dat, Council_area == "Glasgow City")
 edinburgh <- subset(dat, Council_area == "City of Edinburgh")
 
 # Unified colour palette
-col_gla <- "#D6604D"
-col_edi <- "#4393C3"
+col_gla   <- "#D6604D"   # terracotta  — Glasgow
+col_edi   <- "#4393C3"   # steel blue  — Edinburgh
+col_else  <- "#66C2A5"   # mint green  — Elsewhere
+col_point <- "#525252"   # slate gray  — scatter points
+col_line  <- "#2166AC"   # deep blue   — regression line
+col_ref   <- "#878787"   # medium gray — reference line
 ```
 
 
@@ -31,11 +35,15 @@ In this section, we compare the distribution of Attendance rates between Glasgow
 
 boxplot(glasgow$Attendance, edinburgh$Attendance,
         names = c("Glasgow", "Edinburgh"),
-        col = c(adjustcolor(col_gla, 0.6), adjustcolor(col_edi, 0.6)),
-        border = c(col_gla, col_edi),
+        col = c(col_gla, col_edi),
+        border = "black",
+        xlab = "City",
         ylab = "Attendance (proportion)",
         main = "Attendance by City",
-        pch = 1, cex = 0.8)
+        pch = 1, cex = 0.8, axes = FALSE)
+axis(1, at = 1:2, labels = c("Glasgow", "Edinburgh"))
+axis(2, las = 1)
+grid(nx = NA, ny = NULL, col = adjustcolor("#808080", 0.3), lty = 1)
 ```
 
 Figure 1 shows that Edinburgh has a noticeably higher median Attendance than Glasgow. Glasgow also exhibits greater spread, with several low-lying outliers, suggesting that some Glasgow data zones have particularly poor attendance.
@@ -43,10 +51,10 @@ Figure 1 shows that Edinburgh has a noticeably higher median Attendance than Gla
 ```{r histogram, echo=FALSE, fig.height=4, fig.width=6, fig.cap='Histograms of Attendance for Glasgow and Edinburgh'}
 
 par(mfrow = c(1, 2))
-hist(glasgow$Attendance, breaks = 20, col = adjustcolor(col_gla, 0.6),
+hist(glasgow$Attendance, breaks = 20, col = adjustcolor(col_gla),
      border = "white", main = "Glasgow", xlab = "Attendance (proportion)", ylab = "Frequency")
 abline(v = mean(glasgow$Attendance), col = col_gla, lwd = 2, lty = 2)
-hist(edinburgh$Attendance, breaks = 20, col = adjustcolor(col_edi, 0.6),
+hist(edinburgh$Attendance, breaks = 20, col = adjustcolor(col_edi),
      border = "white", main = "Edinburgh", xlab = "Attendance (proportion)", ylab = "Frequency")
 abline(v = mean(edinburgh$Attendance), col = col_edi, lwd = 2, lty = 2)
 legend("topleft", legend = "Sample mean", lty = 2, lwd = 2, col = "black", cex = 0.75, bty = "n")

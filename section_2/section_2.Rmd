@@ -13,9 +13,12 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 dat <- read.csv("../scottishData.csv")
 
 # Unified colour palette
-col_point <- "#525252"
-col_line  <- "#2166AC"
-col_ref   <- "#878787"
+col_gla   <- "#D6604D"   # terracotta  — Glasgow
+col_edi   <- "#4393C3"   # steel blue  — Edinburgh
+col_else  <- "#66C2A5"   # mint green  — Elsewhere
+col_point <- "#525252"   # slate gray  — scatter points
+col_line  <- "#2166AC"   # deep blue   — regression line
+col_ref   <- "#878787"   # medium gray — reference line
 ```
 
 
