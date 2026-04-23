@@ -9,6 +9,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 dat <- read.csv("../scottishData.csv")
+library(ggplot2)
 
 # Create region variable
 dat$Region <- ifelse(dat$Council_area == "Glasgow City", "Glasgow",
@@ -37,13 +38,12 @@ Sections 1 and 2 revealed that (i) Glasgow has significantly lower and more vari
 ## 3.1 Establishing Glasgow's Distinctiveness
 
 ```{r boxplot-3region, echo=FALSE, fig.height=4, fig.width=6, fig.cap='Distribution of Attendance across three regions'}
-boxplot(Attendance ~ Region, data = dat,
-        col    = c(col_gla, col_edi, col_else),
-        border = "black",
-        ylab   = "Attendance (proportion)",
-        main   = "Attendance by Region",
-        pch = 16, cex = 0.5)
-grid(nx = NA, ny = NULL, lty = 1, col = adjustcolor(col_ref, alpha.f = 0.3))
+ggplot(dat, aes(x = Region, y = Attendance, fill = Region)) +
+  geom_boxplot(outlier.shape = 1, outlier.size = 1.5) +
+  scale_fill_manual(values = c("Glasgow" = col_gla, "Edinburgh" = col_edi, "Elsewhere" = col_else)) +
+  labs(x = "Region", y = "Attendance (proportion)", title = "Attendance by Region") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5), legend.position = "none")
 ```
 
 ```{r desc-stats-3region, echo=FALSE}
@@ -157,24 +157,14 @@ knitr::kable(reg_table,
 ```
 
 ```{r scatter-regional, echo=FALSE, fig.height=4, fig.width=6, fig.cap='Regional regression lines for Attendance on Income\\_rate'}
-plot(dat$Income_rate, dat$Attendance,
-     pch = 16, cex = 0.4,
-     col = ifelse(dat$Region == "Glasgow", adjustcolor(col_gla, alpha.f = 0.5),
-           ifelse(dat$Region == "Edinburgh", adjustcolor(col_edi, alpha.f = 0.5),
-                  adjustcolor(col_else, alpha.f = 0.5))),
-     xlab = "Income deprivation rate",
-     ylab = "Attendance (proportion)",
-     main = "Attendance vs Income Rate by Region")
-grid(nx = NA, ny = NULL, lty = 1, col = adjustcolor(col_ref, alpha.f = 0.3))
-abline(lm_gla,  col = col_gla,  lwd = 2)
-abline(lm_edi,  col = col_edi,  lwd = 2)
-abline(lm_else, col = col_else, lwd = 2)
-legend("topright",
-       legend = c(paste0("Glasgow (R\u00b2=", round(r_sq[1], 3), ")"),
-                  paste0("Edinburgh (R\u00b2=", round(r_sq[2], 3), ")"),
-                  paste0("Elsewhere (R\u00b2=", round(r_sq[3], 3), ")")),
-       col = c(col_gla, col_edi, col_else),
-       lty = 1, lwd = 2, cex = 0.7, bty = "n")
+ggplot(dat, aes(x = Income_rate, y = Attendance, colour = Region)) +
+  geom_point(shape = 16, size = 1, alpha = 0.4) +
+  geom_smooth(method = "lm", se = TRUE, linewidth = 0.8, alpha = 0.15) +
+  scale_colour_manual(values = c("Glasgow" = col_gla, "Edinburgh" = col_edi, "Elsewhere" = col_else)) +
+  labs(x = "Income deprivation rate", y = "Attendance (proportion)",
+       title = "Attendance vs Income Rate by Region") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 
 Glasgow's regression line is flatter (slope = `r round(slopes[1], 3)` vs `r round(slopes[3], 3)` for Elsewhere) and its $R^2$ (`r round(r_sq[1], 3)`) is notably lower, meaning Income\_rate explains less of the variation in Glasgow's attendance. To further illustrate this, we predict Attendance at a common Income\_rate level ($= 0.15$, close to the overall median):
@@ -238,6 +228,8 @@ knitr::kable(baseline_coef,
 
 The baseline model represents the "national norm" — how Attendance relates to Income\_rate outside Glasgow. We now apply it to Glasgow:
 
+\newpage
+
 ```{r glasgow-residuals, echo=FALSE}
 # Predict Glasgow's "expected" attendance using the baseline model
 glasgow$predicted <- predict(lm_baseline, newdata = glasgow)
@@ -250,20 +242,21 @@ n_resid    <- length(glasgow$residual)
 ```
 
 ```{r residual-histogram, echo=FALSE, fig.height=4, fig.width=6, fig.cap='Distribution of Glasgow residuals (Actual $-$ Predicted Attendance)'}
-hist(glasgow$residual,
-     breaks = 15,
-     col    = adjustcolor(col_gla, alpha.f = 0.6),
-     border = "white",
-     xlab   = "Residual (Actual - Predicted)",
-     ylab   = "Frequency",
-     main   = "Glasgow: Deviation from National Baseline")
-abline(v = 0,          lty = 2, col = col_ref, lwd = 1.5)
-abline(v = mean_resid, lty = 1, col = col_line, lwd = 2)
-legend("topleft",
-       legend = c("Zero (no effect)",
-                  paste0("Mean residual = ", round(mean_resid, 4))),
-       col = c(col_ref, col_line),
-       lty = c(2, 1), lwd = c(1.5, 2), cex = 0.7, bty = "n")
+resid_df <- data.frame(residual = glasgow$residual)
+ggplot(resid_df, aes(x = residual)) +
+  geom_histogram(bins = 15, fill = col_gla, colour = "white", alpha = 0.7) +
+  geom_vline(xintercept = 0, linetype = "dashed", colour = col_ref, linewidth = 0.6) +
+  geom_vline(xintercept = mean_resid, colour = col_line, linewidth = 0.8) +
+  annotate("text", x = mean_resid, y = Inf, vjust = 2, hjust = -0.1,
+           label = paste0("Mean = ", round(mean_resid, 4)),
+           colour = col_line, size = 3.5) +
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 6)) +
+  labs(x = "Residual (Actual - Predicted)", y = "Frequency",
+       title = "Glasgow: Deviation from National Baseline") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(size = 9),
+        plot.margin = margin(t = 5, r = 10, b = 15, l = 5, unit = "pt"))
 ```
 
 The histogram is shifted to the left of zero, with a mean residual of `r round(mean_resid, 4)`. To test whether this shift is statistically significant, we perform a one-sample $t$-test:
@@ -347,29 +340,24 @@ The variable most strongly correlated with the Glasgow residuals is **`r top_var
 ## 3.5 Deep Dive: The Key Factor Behind the Glasgow Effect
 
 ```{r deep-dive-scatter, echo=FALSE, fig.height=4, fig.width=6, fig.cap=paste0('Glasgow residuals vs ', top_var_name)}
-plot(glasgow[[top_var_name]], glasgow$residual,
-     pch  = 16, cex = 0.6,
-     col  = adjustcolor(col_gla, alpha.f = 0.6),
-     xlab = top_var_name,
-     ylab = "Residual (Actual - Predicted Attendance)",
-     main = paste0("Glasgow Effect vs ", top_var_name))
-grid(nx = NA, ny = NULL, lty = 1, col = adjustcolor(col_ref, alpha.f = 0.3))
-abline(h = 0, lty = 2, col = col_ref, lwd = 1)
-
 # Fit regression on residuals
 lm_deep <- lm(glasgow$residual ~ glasgow[[top_var_name]])
-abline(lm_deep, col = col_line, lwd = 2)
-
 r_deep     <- cor(glasgow$residual, glasgow[[top_var_name]], use = "complete.obs")
 r2_deep    <- summary(lm_deep)$r.squared
 slope_deep <- coef(lm_deep)[2]
 ci_deep    <- confint(lm_deep, level = 0.95)
 
-legend("bottomleft",
-       legend = c(paste0("r = ", round(r_deep, 3), ", R\u00b2 = ", round(r2_deep, 3)),
-                  "National baseline (residual = 0)"),
-       col = c(col_line, col_ref),
-       lty = c(1, 2), lwd = c(2, 1), cex = 0.7, bty = "n")
+deep_df <- data.frame(x = glasgow[[top_var_name]], y = glasgow$residual)
+
+ggplot(deep_df, aes(x = x, y = y)) +
+  geom_point(shape = 16, size = 1, alpha = 0.4, colour = col_gla) +
+  geom_smooth(method = "lm", se = TRUE, colour = col_line,
+              fill = adjustcolor(col_line, alpha.f = 0.15), linewidth = 0.8) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = col_ref, linewidth = 0.6) +
+  labs(x = top_var_name, y = "Residual (Actual - Predicted Attendance)",
+       title = paste0("Glasgow Effect vs ", top_var_name)) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ```{r deep-dive-table, echo=FALSE}

@@ -6,6 +6,9 @@ output:
   bookdown::pdf_document2:
     latex_engine: pdflatex
     number_sections: false
+header-includes:
+  - \usepackage{fvextra}
+  - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
 ---
 
 ```{r setup, include=FALSE}
