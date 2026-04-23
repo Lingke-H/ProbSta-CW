@@ -1,0 +1,422 @@
+---
+title: "An Analysis of School Attendance Rates across Scottish Data Zones"
+date: ''
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+dat <- read.csv("../scottishData.csv")
+
+# Create region variable
+dat$Region <- ifelse(dat$Council_area == "Glasgow City", "Glasgow",
+              ifelse(dat$Council_area == "City of Edinburgh", "Edinburgh", "Elsewhere"))
+dat$Region <- factor(dat$Region, levels = c("Glasgow", "Edinburgh", "Elsewhere"))
+
+# Subsets
+glasgow   <- subset(dat, Region == "Glasgow")
+edinburgh <- subset(dat, Region == "Edinburgh")
+elsewhere <- subset(dat, Region == "Elsewhere")
+
+# Unified colour palette
+col_gla   <- "#D6604D"   # terracotta  — Glasgow
+col_edi   <- "#4393C3"   # steel blue  — Edinburgh
+col_else  <- "#66C2A5"   # mint green  — Elsewhere
+col_point <- "#525252"   # slate gray  — scatter points
+col_line  <- "#2166AC"   # deep blue   — regression line
+col_ref   <- "#878787"   # medium gray — reference line
+```
+
+
+# Section 3: A Further Investigation
+
+Sections 1 and 2 revealed that (i) Glasgow has significantly lower and more variable Attendance than Edinburgh, and (ii) Income\_rate is the strongest single predictor of Attendance across all 400 data zones. A natural follow-up question is: **is Glasgow's lower attendance fully explained by its higher income deprivation, or does a residual "Glasgow effect" persist?** If so, what other factors might be driving it?
+
+## 3.1 Establishing Glasgow's Distinctiveness
+
+```{r boxplot-3region, echo=FALSE, fig.height=4, fig.width=6, fig.cap='Distribution of Attendance across three regions'}
+boxplot(Attendance ~ Region, data = dat,
+        col    = c(col_gla, col_edi, col_else),
+        border = "black",
+        ylab   = "Attendance (proportion)",
+        main   = "Attendance by Region",
+        pch = 16, cex = 0.5)
+grid(nx = NA, ny = NULL, lty = 1, col = adjustcolor(col_ref, alpha.f = 0.3))
+```
+
+```{r desc-stats-3region, echo=FALSE}
+n_gla  <- length(glasgow$Attendance)
+n_edi  <- length(edinburgh$Attendance)
+n_else <- length(elsewhere$Attendance)
+
+mean_gla  <- mean(glasgow$Attendance)
+mean_edi  <- mean(edinburgh$Attendance)
+mean_else <- mean(elsewhere$Attendance)
+
+var_gla  <- var(glasgow$Attendance)
+var_edi  <- var(edinburgh$Attendance)
+var_else <- var(elsewhere$Attendance)
+
+stats_table <- data.frame(
+  Region   = c("Glasgow", "Edinburgh", "Elsewhere"),
+  N        = c(n_gla, n_edi, n_else),
+  Mean     = round(c(mean_gla, mean_edi, mean_else), 4),
+  SD       = round(c(sd(glasgow$Attendance), sd(edinburgh$Attendance), sd(elsewhere$Attendance)), 4),
+  Variance = round(c(var_gla, var_edi, var_else), 6)
+)
+
+knitr::kable(stats_table,
+             caption = "Descriptive statistics of Attendance by region.",
+             align = "c")
+```
+
+Figure 1 and Table 1 show that Glasgow has the lowest median Attendance, the widest spread, and the most low-end outliers. Edinburgh is tightly concentrated at higher values, while Elsewhere falls between the two.
+
+To confirm this statistically, we first perform pairwise F-tests to determine whether variances differ (which informs the choice of t-test), followed by pairwise Welch's t-tests for means.
+
+```{r f-tests-pairwise, echo=FALSE}
+# F-tests: variance comparison
+f_gla_else <- var.test(glasgow$Attendance, elsewhere$Attendance)
+f_edi_else <- var.test(edinburgh$Attendance, elsewhere$Attendance)
+f_gla_edi  <- var.test(glasgow$Attendance, edinburgh$Attendance)
+
+f_table <- data.frame(
+  Comparison = c("Glasgow vs Elsewhere", "Edinburgh vs Elsewhere", "Glasgow vs Edinburgh"),
+  F_stat     = round(c(f_gla_else$statistic, f_edi_else$statistic, f_gla_edi$statistic), 4),
+  df1        = c(f_gla_else$parameter[1], f_edi_else$parameter[1], f_gla_edi$parameter[1]),
+  df2        = c(f_gla_else$parameter[2], f_edi_else$parameter[2], f_gla_edi$parameter[2]),
+  p_value    = c(formatC(f_gla_else$p.value, format = "e", digits = 3),
+                 formatC(f_edi_else$p.value, format = "e", digits = 3),
+                 formatC(f_gla_edi$p.value, format = "e", digits = 3))
+)
+
+knitr::kable(f_table,
+             caption = "F-tests comparing variance of Attendance between regions.",
+             align = "c",
+             col.names = c("Comparison", "F-statistic", "df1", "df2", "p-value"))
+```
+
+```{r t-tests-pairwise, echo=FALSE}
+# Welch's t-tests: mean comparison
+t_gla_else <- t.test(glasgow$Attendance, elsewhere$Attendance, var.equal = FALSE)
+t_edi_else <- t.test(edinburgh$Attendance, elsewhere$Attendance, var.equal = FALSE)
+t_gla_edi  <- t.test(glasgow$Attendance, edinburgh$Attendance, var.equal = FALSE)
+
+t_table <- data.frame(
+  Comparison = c("Glasgow vs Elsewhere", "Edinburgh vs Elsewhere", "Glasgow vs Edinburgh"),
+  t_stat     = round(c(t_gla_else$statistic, t_edi_else$statistic, t_gla_edi$statistic), 4),
+  df         = round(c(t_gla_else$parameter, t_edi_else$parameter, t_gla_edi$parameter), 2),
+  p_value    = c(formatC(t_gla_else$p.value, format = "e", digits = 3),
+                 formatC(t_edi_else$p.value, format = "e", digits = 3),
+                 formatC(t_gla_edi$p.value, format = "e", digits = 3))
+)
+
+knitr::kable(t_table,
+             caption = "Welch's t-tests comparing mean Attendance between regions.",
+             align = "c",
+             col.names = c("Comparison", "t-statistic", "df", "p-value"))
+```
+
+All F-tests and t-tests yield $p < 0.05$. Glasgow's Attendance is not only significantly lower than Edinburgh's (as established in Section 1), but also significantly lower than the rest of Scotland. This confirms that Glasgow's low attendance is a Glasgow-specific phenomenon, not merely a two-city contrast — and warrants deeper investigation.
+
+## 3.2 Income Cannot Fully Explain Glasgow
+
+If Glasgow's lower attendance were entirely due to its higher income deprivation, then separate regional regressions of Attendance on Income\_rate should produce similar slopes and $R^2$ values. We test this by fitting three independent models.
+
+```{r regional-regression, echo=FALSE}
+lm_gla  <- lm(Attendance ~ Income_rate, data = glasgow)
+lm_edi  <- lm(Attendance ~ Income_rate, data = edinburgh)
+lm_else <- lm(Attendance ~ Income_rate, data = elsewhere)
+
+# Extract coefficients
+slopes     <- c(coef(lm_gla)[2], coef(lm_edi)[2], coef(lm_else)[2])
+intercepts <- c(coef(lm_gla)[1], coef(lm_edi)[1], coef(lm_else)[1])
+r_sq       <- c(summary(lm_gla)$r.squared, summary(lm_edi)$r.squared, summary(lm_else)$r.squared)
+
+# 95% CIs for slopes
+ci_gla  <- confint(lm_gla,  "Income_rate", level = 0.95)
+ci_edi  <- confint(lm_edi,  "Income_rate", level = 0.95)
+ci_else <- confint(lm_else, "Income_rate", level = 0.95)
+
+reg_table <- data.frame(
+  Region    = c("Glasgow", "Edinburgh", "Elsewhere"),
+  Intercept = round(intercepts, 4),
+  Slope     = round(slopes, 4),
+  CI_lower  = round(c(ci_gla[1], ci_edi[1], ci_else[1]), 4),
+  CI_upper  = round(c(ci_gla[2], ci_edi[2], ci_else[2]), 4),
+  R_squared = round(r_sq, 4)
+)
+
+knitr::kable(reg_table,
+             caption = "Regional regression models: Attendance on Income\\_rate.",
+             align = "c",
+             col.names = c("Region", "Intercept", "Slope",
+                           "Slope CI lower", "Slope CI upper", "$R^2$"))
+```
+
+```{r scatter-regional, echo=FALSE, fig.height=4, fig.width=6, fig.cap='Regional regression lines for Attendance on Income\\_rate'}
+plot(dat$Income_rate, dat$Attendance,
+     pch = 16, cex = 0.4,
+     col = ifelse(dat$Region == "Glasgow", adjustcolor(col_gla, alpha.f = 0.5),
+           ifelse(dat$Region == "Edinburgh", adjustcolor(col_edi, alpha.f = 0.5),
+                  adjustcolor(col_else, alpha.f = 0.5))),
+     xlab = "Income deprivation rate",
+     ylab = "Attendance (proportion)",
+     main = "Attendance vs Income Rate by Region")
+grid(nx = NA, ny = NULL, lty = 1, col = adjustcolor(col_ref, alpha.f = 0.3))
+abline(lm_gla,  col = col_gla,  lwd = 2)
+abline(lm_edi,  col = col_edi,  lwd = 2)
+abline(lm_else, col = col_else, lwd = 2)
+legend("topright",
+       legend = c(paste0("Glasgow (R\u00b2=", round(r_sq[1], 3), ")"),
+                  paste0("Edinburgh (R\u00b2=", round(r_sq[2], 3), ")"),
+                  paste0("Elsewhere (R\u00b2=", round(r_sq[3], 3), ")")),
+       col = c(col_gla, col_edi, col_else),
+       lty = 1, lwd = 2, cex = 0.7, bty = "n")
+```
+
+Glasgow's regression line is flatter (slope = `r round(slopes[1], 3)` vs `r round(slopes[3], 3)` for Elsewhere) and its $R^2$ (`r round(r_sq[1], 3)`) is notably lower, meaning Income\_rate explains less of the variation in Glasgow's attendance. To further illustrate this, we predict Attendance at a common Income\_rate level ($= 0.15$, close to the overall median):
+
+```{r prediction-intervals, echo=FALSE}
+new_data <- data.frame(Income_rate = 0.15)
+
+pred_gla  <- predict(lm_gla,  newdata = new_data, interval = "prediction", level = 0.95)
+pred_edi  <- predict(lm_edi,  newdata = new_data, interval = "prediction", level = 0.95)
+pred_else <- predict(lm_else, newdata = new_data, interval = "prediction", level = 0.95)
+
+pred_table <- data.frame(
+  Region = c("Glasgow", "Edinburgh", "Elsewhere"),
+  Fitted = round(c(pred_gla[1], pred_edi[1], pred_else[1]), 4),
+  Lower  = round(c(pred_gla[2], pred_edi[2], pred_else[2]), 4),
+  Upper  = round(c(pred_gla[3], pred_edi[3], pred_else[3]), 4),
+  Width  = round(c(pred_gla[3] - pred_gla[2],
+                    pred_edi[3] - pred_edi[2],
+                    pred_else[3] - pred_else[2]), 4)
+)
+
+knitr::kable(pred_table,
+             caption = "95\\% prediction intervals for Attendance at Income\\_rate $= 0.15$.",
+             align = "c",
+             col.names = c("Region", "Fitted", "Lower", "Upper", "Width"))
+```
+
+At the same level of income deprivation, Glasgow's predicted Attendance is lower and its prediction interval is wider, reflecting greater unexplained variability. This is strong evidence that income deprivation alone cannot fully account for Glasgow's poor attendance — some additional "Glasgow effect" exists.
+
+## 3.3 Quantifying the "Glasgow Effect"
+
+To measure the Glasgow effect precisely, we build a **baseline regression model** using only non-Glasgow data (Edinburgh + Elsewhere, $n = 300$) and then use it to predict what Glasgow's attendance *should be* given its income levels. The difference between actual and predicted attendance — the **residual** — captures the pure Glasgow effect, stripped of income influence.
+
+```{r baseline-model, echo=FALSE}
+# Baseline model: trained on non-Glasgow data
+dat_baseline <- subset(dat, Region != "Glasgow")
+lm_baseline  <- lm(Attendance ~ Income_rate, data = dat_baseline)
+
+baseline_summary <- summary(lm_baseline)
+b0 <- coef(lm_baseline)[1]
+b1 <- coef(lm_baseline)[2]
+```
+
+```{r baseline-table, echo=FALSE}
+baseline_ci <- confint(lm_baseline, level = 0.95)
+
+baseline_coef <- data.frame(
+  Term      = c("Intercept", "Income_rate"),
+  Estimate  = round(coef(lm_baseline), 4),
+  CI_lower  = round(baseline_ci[, 1], 4),
+  CI_upper  = round(baseline_ci[, 2], 4)
+)
+
+knitr::kable(baseline_coef,
+             caption = paste0("Baseline regression model (non-Glasgow, $n = ",
+                              nrow(dat_baseline), "$): Attendance on Income\\_rate."),
+             align = "c",
+             col.names = c("Term", "Estimate", "95\\% CI lower", "95\\% CI upper"),
+             row.names = FALSE)
+```
+
+The baseline model represents the "national norm" — how Attendance relates to Income\_rate outside Glasgow. We now apply it to Glasgow:
+
+```{r glasgow-residuals, echo=FALSE}
+# Predict Glasgow's "expected" attendance using the baseline model
+glasgow$predicted <- predict(lm_baseline, newdata = glasgow)
+glasgow$residual  <- glasgow$Attendance - glasgow$predicted
+
+# Descriptive statistics of Glasgow residuals
+mean_resid <- mean(glasgow$residual)
+sd_resid   <- sd(glasgow$residual)
+n_resid    <- length(glasgow$residual)
+```
+
+```{r residual-histogram, echo=FALSE, fig.height=4, fig.width=6, fig.cap='Distribution of Glasgow residuals (Actual $-$ Predicted Attendance)'}
+hist(glasgow$residual,
+     breaks = 15,
+     col    = adjustcolor(col_gla, alpha.f = 0.6),
+     border = "white",
+     xlab   = "Residual (Actual - Predicted)",
+     ylab   = "Frequency",
+     main   = "Glasgow: Deviation from National Baseline")
+abline(v = 0,          lty = 2, col = col_ref, lwd = 1.5)
+abline(v = mean_resid, lty = 1, col = col_line, lwd = 2)
+legend("topleft",
+       legend = c("Zero (no effect)",
+                  paste0("Mean residual = ", round(mean_resid, 4))),
+       col = c(col_ref, col_line),
+       lty = c(2, 1), lwd = c(1.5, 2), cex = 0.7, bty = "n")
+```
+
+The histogram is shifted to the left of zero, with a mean residual of `r round(mean_resid, 4)`. To test whether this shift is statistically significant, we perform a one-sample $t$-test:
+
+$$H_0: \mu_e = 0 \quad \text{(no Glasgow effect)} \qquad H_1: \mu_e \neq 0$$
+
+```{r residual-ttest, echo=FALSE}
+t_resid <- t.test(glasgow$residual, mu = 0)
+
+t_resid_table <- data.frame(
+  Mean_residual = round(mean_resid, 4),
+  SE            = round(sd_resid / sqrt(n_resid), 4),
+  t_stat        = round(t_resid$statistic, 4),
+  df            = t_resid$parameter,
+  p_value       = formatC(t_resid$p.value, format = "e", digits = 3),
+  CI_lower      = round(t_resid$conf.int[1], 4),
+  CI_upper      = round(t_resid$conf.int[2], 4)
+)
+
+knitr::kable(t_resid_table,
+             caption = "One-sample t-test on Glasgow residuals ($H_0: \\mu_e = 0$).",
+             align = "c",
+             col.names = c("Mean residual", "SE", "t-statistic", "df",
+                           "p-value", "95\\% CI lower", "95\\% CI upper"),
+             row.names = FALSE)
+```
+
+The $p$-value is `r formatC(t_resid$p.value, format = "e", digits = 3)` and the 95% confidence interval for the mean residual is entirely negative. **After controlling for income deprivation, Glasgow's attendance is on average `r round(abs(mean_resid), 4)` lower than the national baseline** — this is the quantified "Glasgow effect."
+
+## 3.4 Identifying the Source: Residual Correlation Scan
+
+The residuals represent Glasgow's attendance performance *after removing the influence of income*. If another variable is correlated with these residuals, it is a candidate explanation for the Glasgow effect. We compute Pearson correlation coefficients between the Glasgow residuals and all available continuous variables (excluding identifiers and Income\_rate itself).
+
+```{r residual-scan, echo=FALSE}
+# Select continuous candidate variables (exclude identifiers, Income, and Attendance)
+scan_vars <- c("Employment_rate", "CIF",
+               "ALCOHOL", "DRUG", "SMR", "DEPRESS", "LBWT", "EMERG",
+               "Attainment", "no_qualifications", "not_participating", "University",
+               "drive_petrol", "drive_GP", "drive_post", "drive_primary",
+               "drive_retail", "drive_secondary",
+               "PT_GP", "PT_post", "PT_retail",
+               "Broadband", "crime_rate",
+               "overcrowded_rate", "nocentralheat_rate")
+
+# Compute Pearson r between Glasgow residuals and each variable
+cors <- sapply(scan_vars, function(v) {
+  x <- glasgow[[v]]
+  if (is.numeric(x) && sum(!is.na(x)) > 5) {
+    cor(glasgow$residual, x, use = "complete.obs")
+  } else {
+    NA
+  }
+})
+
+# Sort by absolute correlation
+cors <- cors[!is.na(cors)]
+cors_sorted <- sort(abs(cors), decreasing = TRUE)
+cors_signed <- cors[names(cors_sorted)]
+
+scan_table <- data.frame(
+  Variable = names(cors_signed),
+  r        = round(cors_signed, 4),
+  abs_r    = round(abs(cors_signed), 4)
+)
+
+knitr::kable(scan_table,
+             caption = "Pearson correlations: Glasgow residuals vs candidate variables (sorted by absolute r).",
+             align = "c",
+             col.names = c("Variable", "r", "Abs(r)"),
+             row.names = FALSE)
+```
+
+```{r identify-top-var, echo=FALSE}
+# Identify the variable with the highest |r|
+top_var_name <- names(cors_signed)[1]
+top_var_r    <- cors_signed[1]
+```
+
+The variable most strongly correlated with the Glasgow residuals is **`r top_var_name`** ($r =$ `r round(top_var_r, 3)`). This suggests that, after accounting for income deprivation, `r top_var_name` is the strongest candidate for explaining the residual Glasgow effect.
+
+## 3.5 Deep Dive: The Key Factor Behind the Glasgow Effect
+
+```{r deep-dive-scatter, echo=FALSE, fig.height=4, fig.width=6, fig.cap=paste0('Glasgow residuals vs ', top_var_name)}
+plot(glasgow[[top_var_name]], glasgow$residual,
+     pch  = 16, cex = 0.6,
+     col  = adjustcolor(col_gla, alpha.f = 0.6),
+     xlab = top_var_name,
+     ylab = "Residual (Actual - Predicted Attendance)",
+     main = paste0("Glasgow Effect vs ", top_var_name))
+grid(nx = NA, ny = NULL, lty = 1, col = adjustcolor(col_ref, alpha.f = 0.3))
+abline(h = 0, lty = 2, col = col_ref, lwd = 1)
+
+# Fit regression on residuals
+lm_deep <- lm(glasgow$residual ~ glasgow[[top_var_name]])
+abline(lm_deep, col = col_line, lwd = 2)
+
+r_deep     <- cor(glasgow$residual, glasgow[[top_var_name]], use = "complete.obs")
+r2_deep    <- summary(lm_deep)$r.squared
+slope_deep <- coef(lm_deep)[2]
+ci_deep    <- confint(lm_deep, level = 0.95)
+
+legend("bottomleft",
+       legend = c(paste0("r = ", round(r_deep, 3), ", R\u00b2 = ", round(r2_deep, 3)),
+                  "National baseline (residual = 0)"),
+       col = c(col_line, col_ref),
+       lty = c(1, 2), lwd = c(2, 1), cex = 0.7, bty = "n")
+```
+
+```{r deep-dive-table, echo=FALSE}
+deep_table <- data.frame(
+  Statistic = c("Pearson r", "R-squared", "Slope", "Slope 95% CI lower", "Slope 95% CI upper"),
+  Value     = round(c(r_deep, r2_deep, slope_deep, ci_deep[2, 1], ci_deep[2, 2]), 4)
+)
+
+knitr::kable(deep_table,
+             caption = paste0("Regression of Glasgow residuals on ", top_var_name, "."),
+             align = "c",
+             row.names = FALSE)
+```
+
+The scatter plot shows a clear trend: within Glasgow, data zones where `r top_var_name` is worse tend to have more negative residuals — meaning their attendance falls further below the national baseline than income alone would predict. The regression of residuals on `r top_var_name` explains $R^2 =$ `r round(r2_deep, 3)` of the variation in the Glasgow effect, with a slope whose 95% confidence interval excludes zero.
+
+```{r chisq-bonus, echo=FALSE}
+# Bonus: Chi-squared independence test
+# Categorise residuals and top variable into terciles
+q_resid <- quantile(glasgow$residual, probs = c(1/3, 2/3))
+q_topvar <- quantile(glasgow[[top_var_name]], probs = c(1/3, 2/3), na.rm = TRUE)
+
+resid_cat <- cut(glasgow$residual,
+                 breaks = c(-Inf, q_resid[1], q_resid[2], Inf),
+                 labels = c("Negative", "Neutral", "Positive"))
+topvar_cat <- cut(glasgow[[top_var_name]],
+                  breaks = c(-Inf, q_topvar[1], q_topvar[2], Inf),
+                  labels = c("Low", "Medium", "High"))
+
+cont_table <- table(resid_cat, topvar_cat)
+
+knitr::kable(cont_table,
+             caption = paste0("Contingency table: Residual category $\\times$ ",
+                              top_var_name, " category (Glasgow only)."))
+
+chi_result <- chisq.test(cont_table)
+```
+
+As a cross-validation using a different statistical framework, we also perform a $\chi^2$ test of independence (Ch.19). Categorising both the residuals and `r top_var_name` into terciles yields the contingency table above. The test statistic is $\chi^2 =$ `r round(chi_result$statistic, 3)` with `r chi_result$parameter` degrees of freedom ($p =$ `r formatC(chi_result$p.value, format = "e", digits = 3)`). `r ifelse(chi_result$p.value < 0.05, "We reject $H_0$: the two variables are not independent, confirming the linear analysis.", "The result is not significant at the 5% level, suggesting the association is primarily captured by the linear relationship.")`
+
+## 3.6 Summary
+
+This investigation followed a four-stage analytical arc:
+
+1. **Glasgow is distinctively worse.** Pairwise F-tests and Welch's t-tests confirm that Glasgow's attendance is significantly lower and more variable than both Edinburgh and the rest of Scotland.
+2. **Income cannot fully explain it.** Separate regional regressions show that Glasgow has a flatter slope and lower $R^2$ (`r round(r_sq[1], 3)`) compared to Edinburgh (`r round(r_sq[2], 3)`) and Elsewhere (`r round(r_sq[3], 3)`). At the same income level, Glasgow's predicted attendance is lower with wider uncertainty.
+3. **The "Glasgow effect" is real and measurable.** A baseline model trained on non-Glasgow data reveals that Glasgow's attendance is on average **`r round(abs(mean_resid), 4)` lower** than expected given its income levels ($p =$ `r formatC(t_resid$p.value, format = "e", digits = 3)`).
+4. **`r top_var_name` is the leading candidate explanation.** A correlation scan of the residuals identifies `r top_var_name` ($r =$ `r round(top_var_r, 3)`) as the variable most strongly associated with the Glasgow effect, confirmed by both regression analysis and a $\chi^2$ independence test.
+
+These findings suggest that addressing Glasgow's attendance gap requires interventions beyond poverty reduction. Factors related to `r top_var_name` appear to play a significant additional role and merit targeted policy attention.

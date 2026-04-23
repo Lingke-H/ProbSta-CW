@@ -1,0 +1,122 @@
+---
+title: "Workshop_Hypothesis testing"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Hypothesis testing in R 
+
+We asked students to submit guesses for lecturers ages, in today's class we are going to use those guesses to perform some hypothesis testing!
+
+The guesses for Katie and Kirsty, Theo and Pete are all saved on Moodle, download these and load them into R using `read.csv`, e.g. `Katie_S_age_guesses <- read.csv('Katie_S_age_guesses.csv')` (remember to set your working directory to where the you saved the data). 
+
+```{r load data}
+
+```
+
+For this exercise you will also need to know our true ages (at the time of the guesses) which are... Katie:28, Kirsty:38, Theo:40 and Pete:46.
+
+These are imported as dataframes the first column are the group numbers, which can be viewed/used by using `$group` and the second column, using `$guess`.
+
+### Katie's age
+
+Let's start by looking at my (Katie's) guesses (wish me luck!!)
+
+First calculate the sample mean of the guesses, call this something sensible like `Katie_xbar`.
+
+Now lets explore the data visully by plotting a histogram.
+
+Then add a line to the histogram using `abline` for the mean guess. You may wish to alter the parameters so the line is more visible e.g. changing the colour `col` or the thickness `lwd`.
+
+Add another line for my/(Katie's) true age as well. Comparing the mean guess and my true age, how well do you think the group did at guessing my age?
+
+Now that was comparing the sample mean, however lot's of you didn't submit a guess so I don't know what the population mean guess for my age would be, and I would like to test if the population mean is equal to my true age 28.
+
+So my hypotheses are $H_0: \mu=28$ and $H_1:\mu\neq 28$, where $\mu$ is the population mean guess for my age.
+
+Calculate the test statistic, $$t=\frac{\bar{x}-\mu}{s/\sqrt{n}}$$, (note we are using a t-test as the population variance is unknown)
+
+Compare the test statistic to the critical value which can be found using the function `qt` and decide if there is evidence to reject $H_0$ or not.
+Now calculate the p-value using `pt`, confirm this value agrees with your previous choice of whether to reject $H_0$.
+
+```{r katie work through}
+#sample mean
+
+
+#plotting histogram
+
+#adding mean line blue
+
+#adding true value in red
+
+
+#sample standard deviation:
+
+
+#sample size:
+
+
+#test stat:
+
+#t-value to compare to:
+
+
+#p-value:
+
+
+```
+
+
+
+It is good to code the test from scratch yourselves, as you have done, however in future you may wish to use the inbuilt r function `t.test`. Have a go at using this function, in the output you will see the test statistic and p-value are given, check these match the ones you calculated.
+
+```{r inbuilt function}
+#perform the test with inbuilt function
+
+```
+
+Now the photo was taken exactly on my half birthday so I'm technically 28.5, either using your own code or the inbuilt function perform the hypothesis test again, this time with $H_0: \mu=28.5$.
+
+``` {r new test}
+#perform the test but now for 28.5
+
+```
+
+
+
+### Some more tests
+
+Form and perform hypothesis tests for the following:
+
+i) Test if the population mean guess for Pete's age is under his true age of 46 at the 5% significance level.
+
+```{r pete}
+
+```
+
+ii) Test if the population mean guess for Kirsty's age is 38, in the hypothesis test you run ensure the probability of a type I error is 1%.
+
+```{r kirsty}
+
+```
+
+iii) Test if the population mean guess for Theo's age is greater then 40, run this at a 10% significance level 
+```{r theo}
+
+```
+
+
+### Finally 
+
+This is an interesting data set so keep having a play around with it, you could plot histograms like you did for Katie's data for the other lecturers or even have a go at comparing two lecturers. There may be other hypothesis tests you want to perform, or perhaps have a go at choosing an alternative hypothesis and calculating the power for one of the tests you have already done.
+
+```{r boxplots}
+
+
+  
+# Applying boxplot function 
+
+```

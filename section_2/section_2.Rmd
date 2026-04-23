@@ -10,15 +10,15 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
-dat <- read.csv("scottishData.csv")
-library(ggplot2)
-library(dplyr)
-library(broom)
+dat <- read.csv("../scottishData.csv")
 
 # Unified colour palette
-col_point <- "#525252"
-col_line  <- "#2166AC"
-col_ref   <- "#878787"
+col_gla   <- "#D6604D"   # terracotta  — Glasgow
+col_edi   <- "#4393C3"   # steel blue  — Edinburgh
+col_else  <- "#66C2A5"   # mint green  — Elsewhere
+col_point <- "#525252"   # slate gray  — scatter points
+col_line  <- "#2166AC"   # deep blue   — regression line
+col_ref   <- "#878787"   # medium gray — reference line
 ```
 
 
@@ -28,7 +28,7 @@ Having established that Attendance differs between Glasgow and Edinburgh, we now
 
 ## 2.1 Pairwise Relationships
 
-```{r scatters_1, echo=FALSE, fig.height=6, fig.width=7, fig.cap='Pairwise scatterplot matrix of Attendance and four selected variables'}
+```{r scatters_1, echo=FALSE, fig.height=4, fig.width=6, fig.cap='Pairwise scatterplot matrix of Attendance and four selected variables'}
 
 vars <- c("Attendance", "Attainment", "crime_rate", "CIF", "Income_rate")
 
@@ -75,7 +75,14 @@ correlations <- c(
 )
 data2_name <- names(which.max(abs(correlations)))
 
-# Fit simple linear regression
+# Manual calculation of slope and intercept (Workshop 5 style)
+x <- dat[[data2_name]]
+y <- dat$Attendance
+n <- length(x)
+beta1_manual <- (sum(x * y) - n * mean(x) * mean(y)) / (sum(x^2) - n * mean(x)^2)
+beta0_manual <- mean(y) - beta1_manual * mean(x)
+
+# Verify with lm()
 model_formula <- as.formula(paste("Attendance ~", data2_name))
 lm_model <- lm(model_formula, data = dat)
 
@@ -93,7 +100,8 @@ The estimated regression equation is: $\hat{y} =$ `r round(intercept, 4)` $+$ (`
 ```{r Linear Regression Analysis, echo = FALSE}
 
 # Regression coefficients table
-knitr::kable(tidy(lm_model), digits = 4,
+coef_table <- summary(lm_model)$coefficients
+knitr::kable(coef_table, digits = 4,
              caption = paste("Simple linear regression model: Attendance ~", data2_name))
 
 # 95% confidence intervals for coefficients
@@ -109,47 +117,35 @@ Both coefficients are highly significant ($p < 0.001$). The slope $\hat{\beta}_1
 
 ```{r linear_regression, echo = FALSE, fig.height=4, fig.width=6, fig.cap='Scatterplot with fitted regression line'}
 
-equation <- paste0("y = ", round(intercept, 3), " + (", round(slope, 3), ") * x")
+equation <- paste0("y = ", round(intercept, 3), " + (", round(slope, 3), ") x")
+r2_label <- paste0("R² = ", round(r_squared, 4))
 
-# Dynamic annotation position
-x_pos <- quantile(dat[[data2_name]], 0.75, na.rm = TRUE)
-y_pos <- quantile(dat$Attendance, 0.95, na.rm = TRUE)
-
-ggplot(dat, aes(x = !!sym(data2_name), y = Attendance)) +
-  geom_point(shape = 16, size = 1, colour = adjustcolor(col_point, alpha.f = 0.5)) +
-  geom_smooth(method = "lm", se = TRUE, colour = col_line, fill = adjustcolor(col_line, alpha.f = 0.15)) +
-  labs(
-    x = data2_name,
-    y = "Attendance",
-    title = paste("Regression of Attendance on", data2_name)
-  ) +
-  annotate("text", x = x_pos, y = y_pos, label = equation, parse = FALSE,
-           size = 4, colour = col_line) +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5))
+plot(dat[[data2_name]], dat$Attendance,
+     pch = 16, cex = 0.5, col = adjustcolor(col_point, 0.5),
+     xlab = data2_name, ylab = "Attendance (proportion)",
+     main = paste("Attendance vs", data2_name))
+abline(lm_model, col = col_line, lwd = 2)
+legend("topright", legend = c(equation, r2_label),
+       col = c(col_line, NA), lty = c(1, NA), lwd = c(2, NA),
+       cex = 0.85, bty = "n")
 
 ```
 
-Figure 4 visualises the fitted line superimposed on the raw data. The negative trend is clear, and the shaded 95% confidence band for the regression line is narrow, reflecting the large sample size. Some dispersion is evident at higher values of `r data2_name`, which we examine further via residual diagnostics.
+Figure 4 visualises the fitted regression line superimposed on the raw data. The negative trend is clear. Some dispersion is evident at higher values of `r data2_name`, which we examine further via residual diagnostics.
 
 ## 2.5 Residual Diagnostics
 
 ```{r residuals, echo = FALSE, fig.height=4, fig.width=6, fig.cap='Residuals of the fitted model'}
 
-# residuals
+# residuals (Workshop 5 style)
 dat$residuals <- residuals(lm_model)
 dat$fitted    <- fitted(lm_model)
 
-ggplot(dat, aes(x = fitted, y = residuals)) +
-  geom_point(shape = 16, size = 1, colour = adjustcolor(col_point, alpha.f = 0.5)) +
-  geom_hline(yintercept = 0, linetype = "dashed", colour = col_ref, linewidth = 0.6) +
-  labs(
-    x = "Predicted Attendance Rate (%)",
-    y = "Residuals",
-    title = "Residuals vs Fitted Values"
-  ) +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5))
+plot(dat$fitted, dat$residuals,
+     pch = 16, cex = 0.5, col = adjustcolor(col_point, 0.5),
+     xlab = "Fitted Values", ylab = "Residuals",
+     main = "Residuals vs Fitted Values")
+abline(h = 0, lty = 2, col = col_ref, lwd = 1.5)
 
 ```
 
