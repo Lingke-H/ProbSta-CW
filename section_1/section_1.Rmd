@@ -139,33 +139,6 @@ The non-overlapping confidence intervals for the mean provide strong preliminary
 
 ## 1.4 Hypothesis Tests
 
-**Test for difference in means.**
-
-```{r t_test, echo = FALSE}
-
-# Manual t-statistic calculation (Welch's t-test, as in Workshop 2)
-t_stat <- (mean_gla - mean_edi) / sqrt(var_gla / n_gla + var_edi / n_edi)
-df_welch <- (var_gla / n_gla + var_edi / n_edi)^2 /
-            ((var_gla / n_gla)^2 / (n_gla - 1) + (var_edi / n_edi)^2 / (n_edi - 1))
-p_val_t <- 2 * pt(abs(t_stat), df = df_welch, lower.tail = FALSE)
-
-# Verify with built-in function
-t_result <- t.test(glasgow$Attendance, edinburgh$Attendance, var.equal = FALSE)
-
-t_table <- data.frame(
-  Statistic = round(t_result$statistic, 4),
-  df        = round(t_result$parameter, 2),
-  p_value   = formatC(t_result$p.value, format = "e", digits = 4)
-)
-
-knitr::kable(t_table,
-             caption = "Welch's two-sample t-test for difference in mean Attendance.",
-             align = "c",
-             col.names = c("t-statistic", "df", "p-value"))
-```
-
-We test $H_0: \mu_{Glasgow} = \mu_{Edinburgh}$ against $H_1: \mu_{Glasgow} \neq \mu_{Edinburgh}$ using Welch's two-sample $t$-test, which does not require equal variances. The test yields $t =$ `r round(t_result$statistic, 3)` with $p$-value $=$ `r formatC(t_result$p.value, format = "e", digits = 3)`. Since $p < 0.05$, we reject $H_0$ and conclude that Glasgow's mean Attendance is significantly lower than Edinburgh's.
-
 **Test for difference in variability.**
 
 ```{r f_test, echo = FALSE}
@@ -191,6 +164,33 @@ knitr::kable(f_table,
              col.names = c("F-statistic", "df1", "df2", "p-value"))
 ```
 
-We test $H_0: \sigma^2_{Glasgow} = \sigma^2_{Edinburgh}$ against $H_1: \sigma^2_{Glasgow} \neq \sigma^2_{Edinburgh}$ using an $F$-test (which assumes normality). The result is $F =$ `r round(f_result$statistic, 3)` with $p$-value $=$ `r formatC(f_result$p.value, format = "e", digits = 3)`. Since $p > 0.05$, we fail to reject $H_0$ and conclude that there is insufficient evidence of a significant difference in attendance variability between Glasgow and Edinburgh at the $5\%$ significance level.
+Before comparing means, we first assess whether the population variances are equal, as this informs the choice of $t$-test. We test $H_0: \sigma^2_{Glasgow} = \sigma^2_{Edinburgh}$ against $H_1: \sigma^2_{Glasgow} \neq \sigma^2_{Edinburgh}$ using an $F$-test (which assumes normality). The result is $F =$ `r round(f_result$statistic, 3)` with $p$-value $=$ `r formatC(f_result$p.value, format = "e", digits = 3)`. Since $p > 0.05$, we fail to reject $H_0$ and conclude that there is insufficient evidence of a significant difference in attendance variability between Glasgow and Edinburgh at the $5\%$ significance level.
+
+**Test for difference in means.**
+
+```{r t_test, echo = FALSE}
+
+# Manual t-statistic calculation (Welch's t-test, as in Workshop 2)
+t_stat <- (mean_gla - mean_edi) / sqrt(var_gla / n_gla + var_edi / n_edi)
+df_welch <- (var_gla / n_gla + var_edi / n_edi)^2 /
+            ((var_gla / n_gla)^2 / (n_gla - 1) + (var_edi / n_edi)^2 / (n_edi - 1))
+p_val_t <- 2 * pt(abs(t_stat), df = df_welch, lower.tail = FALSE)
+
+# Verify with built-in function
+t_result <- t.test(glasgow$Attendance, edinburgh$Attendance, var.equal = FALSE)
+
+t_table <- data.frame(
+  Statistic = round(t_result$statistic, 4),
+  df        = round(t_result$parameter, 2),
+  p_value   = formatC(t_result$p.value, format = "e", digits = 4)
+)
+
+knitr::kable(t_table,
+             caption = "Welch's two-sample t-test for difference in mean Attendance.",
+             align = "c",
+             col.names = c("t-statistic", "df", "p-value"))
+```
+
+Having established that the variances are not significantly different, we now test $H_0: \mu_{Glasgow} = \mu_{Edinburgh}$ against $H_1: \mu_{Glasgow} \neq \mu_{Edinburgh}$ using Welch's two-sample $t$-test, which remains valid regardless of whether the variances are equal. The test yields $t =$ `r round(t_result$statistic, 3)` with $p$-value $=$ `r formatC(t_result$p.value, format = "e", digits = 3)`. Since $p < 0.05$, we reject $H_0$ and conclude that Glasgow's mean Attendance is significantly lower than Edinburgh's.
 
 In summary, Glasgow's mean Attendance is significantly lower than Edinburgh's, while there is insufficient evidence that the variability of Attendance differs between the two cities. These findings motivate a deeper investigation in Section 2, where we explore which factors are most strongly associated with Attendance across all Scottish data zones.

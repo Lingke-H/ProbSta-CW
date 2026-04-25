@@ -6,24 +6,24 @@
 - 主体代码用 `echo=FALSE`
 
 ## Your Task
-“scottishData.csv”包含*400个数据区域*的统计数据，其中包含*34个变量*，变量说名在 Table 1 附件中有详细呈现。在 Section 1-2 中，本组应重点分析的对象是 **Attendance（入学率）**；在 Section 3 中，本组应**自行选择**一个变量进行分析。
+scottishData.csv 包含*400个数据区域*的统计数据，其中包含*34个变量*，变量说名在 Table 1 附件中有详细呈现。在 Section 1-2 中，本组应重点分析的对象是 **Attendance（入学率）**；在 Section 3 中，本组应**自行选择**一个变量进行分析。
 
-报告需要包含以下部分：**Summary, Introduction, Methods, Results, Conclusions**，更加详细的报告呈现指导细节请参考 “Writing a statistical report“ 附件和 “Marking Scheme”部分。
+报告需要包含以下部分：**Summary, Introduction, Methods, Results, Conclusions**，更加详细的报告呈现指导细节请参考 “Writing a statistical report“ 附件和 “Marking Scheme” 部分。
 
 其中，对于 **Results**，需要下面三个板块中的所有小点（绝不能遗漏，每个小点1-3分），并加上适当的连接语句使得推倒逻辑连贯，段落之间过渡自然：
 - Section 1: Summary Statistics and Hypothesis test （比较 Glasgow 和 Edinburgh 的入学率，方法对应课程 Chapter 12-16 的内容）
 - Section 2: Investigating the relationship between Attendance and other variables（选择`Income_rate`作为解释变量，方法对应课程 Chapter 17-19 的内容）
 - Section 3: A brief investigation of the student's choosing
 
-## Section 1: Summary Statistics and Hypothesis test — "Glasgow 和 Edinburgh 的出勤率有何差异？"
+## Section 1: Summary Statistics and Hypothesis test — Glasgow 和 Edinburgh 的出勤率有何差异？
 
-**逻辑线**：从「看」到「量」到「验」——先用图形建立直觉，再用数值量化差异，最后用推断统计下结论。
+**逻辑线**：先用图形建立直觉，再用数值量化差异，最后用推断统计下结论。
 
 ### 分析步骤
 
 > **核心问题**：Glasgow 和 Edinburgh 两城的 Attendance 在均值和方差上是否存在显著差异？
 
-#### 一、看——图形探索（建立直觉）
+#### 一、图形探索（建立直觉）
 
 1. **并排 Boxplot**（Ch.12 探索性分析）
    - 直观比较两城 Attendance 的中位数、四分位距和离群值
@@ -33,7 +33,7 @@
    - 观察各自分布形态和偏态
    - → **进一步印象：Edinburgh 紧密集中在高值，Glasgow 更宽且明显左偏——某些 Glasgow 数据区域出勤率极低**
 
-#### 二、量——描述性统计（量化差异）
+#### 二、描述性统计（量化差异）
 
 3. **样本均值与方差**（Ch.12 描述性统计）
    - 计算 $\bar{x}_G$, $\bar{x}_E$, $s^2_G$, $s^2_E$，将视觉印象转化为具体数字
@@ -50,17 +50,19 @@
    - 实际结果：Glasgow $(0.00550, 0.00964)$，Edinburgh $(0.00746, 0.01305)$，**两区间重叠**
    - → **初步暗示：方差差异可能不显著——需要正式检验确认**
 
-#### 三、验——假设检验（正式下结论）
+#### 三、假设检验（正式下结论）
 
-6. **均值差异检验 — Welch's t-test**（Ch.13–14）
-   - $H_0: \mu_G = \mu_E$ vs $H_1: \mu_G \neq \mu_E$（不假设方差相等）
-   - 实际结果：$t = -2.505$, $df = 193.61$, $p = 0.013 < 0.05$ → **拒绝 $H_0$**
-   - → **结论：Glasgow 的均值出勤率显著低于 Edinburgh，与均值 CI 不重叠的结果一致**
-
-7. **方差差异检验 — F-test**（Ch.15）
+6. **方差差异检验 — F-test**（Ch.15）
+   - 先检验方差是否相等，以此决定后续 t-test 的类型
    - $H_0: \sigma^2_G / \sigma^2_E = 1$ vs $H_1: \sigma^2_G / \sigma^2_E \neq 1$（假设正态性）
    - 实际结果：$F = 0.738$, $df_1 = df_2 = 99$, $p = 0.133 > 0.05$ → **无法拒绝 $H_0$**
    - → **结论：没有充分证据表明两城出勤率的方差存在显著差异，与方差 CI 重叠的结果一致**
+
+7. **均值差异检验 — Welch's t-test**（Ch.13–14）
+   - 已知方差无显著差异，现在正式检验均值
+   - $H_0: \mu_G = \mu_E$ vs $H_1: \mu_G \neq \mu_E$（Welch's t-test 无论方差是否相等均有效）
+   - 实际结果：$t = -2.505$, $df = 193.61$, $p = 0.013 < 0.05$ → **拒绝 $H_0$**
+   - → **结论：Glasgow 的均值出勤率显著低于 Edinburgh，与均值 CI 不重叠的结果一致**
 
 ### Section 1 小结
 
@@ -74,15 +76,15 @@
 
 ---
 
-## Section 2: Investigating the relationship between Attendance and other variables — "什么因素与出勤率关系最密切？"
+## Section 2: Investigating the relationship between Attendance and other variables — 什么因素与出勤率关系最密切？
 
-**逻辑线**：从「广」到「精」到「查」——先广撒网看所有候选变量，再精确建模最强预测因子，最后检查模型假设是否成立。
+**逻辑线**：先看全部 4 个候选变量，再精确建模最强预测因子，最后检查模型假设是否成立。
 
 ### 分析步骤
 
 > **核心问题**：在 Attainment、Crime_rate、CIF、Income_rate 四个候选变量中，哪个与 Attendance 的线性关系最强？能否用该变量建立一个合理的预测模型？
 
-#### 一、广——多变量探索（初筛候选）
+#### 一、多变量探索（初筛候选）
 
 1. **Pairwise 散点图矩阵**（Ch.17 探索性分析）
    - 5 个变量（Attendance + 4 个候选）的 $5 \times 5$ 散点图矩阵
@@ -97,7 +99,7 @@
    - 依据：与 Attendance 绝对相关最高
    - → **过渡：从相关分析进入回归建模**
 
-#### 二、精——线性回归建模（量化关系）
+#### 二、线性回归建模（量化关系）
 
 4. **简单线性回归模型**（Ch.18 线性回归）
    - $\text{Attendance} = \beta_0 + \beta_1 \times \text{Income\_rate} + \varepsilon$
@@ -110,7 +112,7 @@
    - 散点图叠加回归线 + 95% 置信带
    - → **视觉验证：拟合线捕捉了总体负趋势，但高 Income_rate 区域的散点明显更分散——暗示模型在高贫困地区表现较差**
 
-#### 三、查——残差诊断（检验假设）
+#### 三、残差诊断（检验假设）
 
 6. **残差 vs 拟合值图**（Ch.18 模型诊断）
    - 检验线性性和同方差性假设
@@ -120,7 +122,7 @@
 ### Section 2 小结
 
 > Income_rate 是四个候选变量中与 Attendance 线性关联最强的变量（$r = -0.756$, $R^2 = 0.58$），但模型仍有 ~42% 的变异未解释。残差图显示高 Income_rate 区域（即最贫困区域）的残差偏大。
-> 自然追问：**S1 已知 Glasgow 出勤率最低，S2 发现 Income_rate 是最强预测因子。Glasgow 恰好是贫困最严重的区域——那么 Glasgow 的低出勤完全是"穷"造成的吗？** → 引出 Section 3
+> 自然追问：**S1 已知 Glasgow 出勤率最低，S2 发现 Income_rate 是最强预测因子。Glasgow 恰好是低收入最严重的区域——那么 Glasgow 的低出勤完全是由低收入造成的吗？** → 引出 Section 3
 
 ### S2 → S3 过渡逻辑
 
@@ -130,7 +132,7 @@
 >
 > 这就是 S3 的出发点：**把 S2 的全国视角拆分到区域层面，检验 Income_rate 对 Glasgow 的解释力是否足够。**
 
-## Section 3: A Further Investigation — "Glasgow 的低出勤是因为贫困，还是另有原因？"
+## Section 3: A Further Investigation — Glasgow 的低出勤是因为贫困，还是另有原因？
 
 **逻辑线**：S1 发现入学率 Glasgow < Edinburgh；S2 发现 `Income_rate` 是本组所选择的5个变量中的最强预测因子，但 $R^2 = 0.58$ 说明仍有大量未解释变异。Section 3 追问：这个全国模型在 Glasgow 是否同样有效？Glasgow 的低出勤是否完全由收入贫困解释，还是 income–attendance 关系在 Glasgow 存在结构性差异？
 

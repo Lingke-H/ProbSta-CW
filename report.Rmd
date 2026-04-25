@@ -8,6 +8,9 @@ output:
     number_sections: false
 header-includes:
   - \usepackage{float}
+  - \usepackage{booktabs}
+  - \usepackage{fvextra}
+  - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
 ---
 
 ```{r setup, include=FALSE}
@@ -137,7 +140,8 @@ stats_table <- data.frame(
 
 knitr::kable(stats_table,
              caption = "Sample means and variances of Attendance for Glasgow and Edinburgh.",
-             align = "c")
+             align = "c",
+             booktabs = TRUE)
 ```
 
 Table \@ref(tab:mean-var) reports the sample means and variances for each city. Glasgow's mean attendance is $\bar{x}_G = 0.7613$, compared to $\bar{x}_E = 0.7938$ for Edinburgh, a difference of approximately 3.2 percentage points. Glasgow's sample variance is $s^2_G = 0.00714$, which is smaller than Edinburgh's $s^2_E = 0.00967$, suggesting that attendance rates in Glasgow are slightly less dispersed in raw terms, though the visual evidence from \@ref(fig:city-histogram) shows Glasgow's distribution has a heavier lower tail.
@@ -158,7 +162,8 @@ ci_mean_table <- data.frame(
 knitr::kable(ci_mean_table,
              caption = "95\\% confidence intervals for the mean of Attendance.",
              align = "c",
-             col.names = c("City", "2.5%", "97.5%"))
+             col.names = c("City", "2.5%", "97.5%"),
+             booktabs = TRUE)
 ```
 
 Table \@ref(tab:ci-mean) presents the $95\%$ confidence intervals for the population mean attendance in each city. Glasgow's interval is $(0.745, 0.778)$ and Edinburgh's is $(0.774, 0.813)$. These two intervals do not overlap, providing strong preliminary evidence that the true mean attendance rates differ significantly between the two cities. 
@@ -180,32 +185,13 @@ ci_var_table <- data.frame(
 knitr::kable(ci_var_table,
              caption = "95\\% confidence intervals for the variance of Attendance.",
              align = "c",
-             col.names = c("City", "2.5%", "97.5%"))
+             col.names = c("City", "2.5%", "97.5%"),
+             booktabs = TRUE)
 ```
 
 Table \@ref(tab:ci-var) presents the $95\%$ confidence intervals for the population variance, constructed using the $\chi^2$-distribution. Glasgow's interval is $(0.00550, 0.00964)$ and Edinburgh's is $(0.00746, 0.01305)$. Unlike the mean intervals, these two intervals overlap, suggesting that the difference in variability between the two cities may not be statistically significant; this is investigated formally below.
 
-### 1.4 Test for Difference in Means
-
-```{r t-test, echo = FALSE}
-
-t_result <- t.test(glasgow$Attendance, edinburgh$Attendance, var.equal = FALSE)
-
-t_table <- data.frame(
-  Statistic = round(t_result$statistic, 4),
-  df        = round(t_result$parameter, 2),
-  p_value   = formatC(t_result$p.value, format = "e", digits = 4)
-)
-
-knitr::kable(t_table,
-             caption = "Welch's two-sample t-test for difference in mean Attendance.",
-             align = "c",
-             col.names = c("t-statistic", "df", "p-value"))
-```
-
-To formally assess whether mean attendance differs between the two cities, a test is performed with:$$H_0: \mu_{\text{Glasgow}} = \mu_{\text{Edinburgh}} \qquad \text{vs} \qquad H_1: \mu_{\text{Glasgow}} \neq \mu_{\text{Edinburgh}}$$using Welch's two-sample $t$-test. The test yields $t = -2.505$ with $df = 193.61$ and $p = 0.013$. Since $p < \alpha = 0.05$, $H_0$ is rejected and conclude that Glasgow's mean attendance rate is statistically significantly lower than Edinburgh's. This finding is consistent with the non-overlapping confidence intervals for the mean reported in Table \@ref(tab:ci-mean).
-
-### 1.5 Test for Difference in Variability
+### 1.4 Test for Difference in Variability
 
 ```{r f-test, echo = FALSE}
 
@@ -221,10 +207,32 @@ f_table <- data.frame(
 knitr::kable(f_table,
              caption = "F-test for equality of variances of Attendance.",
              align = "c",
-             col.names = c("F-statistic", "df1", "df2", "p-value"))
+             col.names = c("F-statistic", "df1", "df2", "p-value"),
+             booktabs = TRUE)
 ```
 
-To assess whether attendance rates are more variable in one city than the other, a test is performed with:$$H_0: \frac{\sigma^2_{\text{Glasgow}}}{\sigma^2_{\text{Edinburgh}}} = 1 \qquad \text{vs} \qquad H_1: \frac{\sigma^2_{\text{Glasgow}}}{\sigma^2_{\text{Edinburgh}}} \neq 1$$using an $F$-test. The test statistic is $F = s^2_G / s^2_E = 0.00714 / 0.00967 = 0.738$ with $df_1 = df_2 = 99$ and $p = 0.133$. Since $p > \alpha = 0.05$, we fail to reject $H_0$ and conclude that there is insufficient evidence of a significant difference in attendance variability between Glasgow and Edinburgh at the $5\%$ significance level. This is consistent with the overlapping confidence intervals for variance observed in Table \@ref(tab:ci-var).
+Before comparing means, we first assess whether attendance rates are equally variable in the two cities, as this informs the choice of $t$-test. A test is performed with:$$H_0: \frac{\sigma^2_{\text{Glasgow}}}{\sigma^2_{\text{Edinburgh}}} = 1 \qquad \text{vs} \qquad H_1: \frac{\sigma^2_{\text{Glasgow}}}{\sigma^2_{\text{Edinburgh}}} \neq 1$$using an $F$-test. The test statistic is $F = s^2_G / s^2_E = 0.00714 / 0.00967 = 0.738$ with $df_1 = df_2 = 99$ and $p = 0.133$. Since $p > \alpha = 0.05$, we fail to reject $H_0$ and conclude that there is insufficient evidence of a significant difference in attendance variability between Glasgow and Edinburgh at the $5\%$ significance level. This is consistent with the overlapping confidence intervals for variance observed in Table \@ref(tab:ci-var).
+
+### 1.5 Test for Difference in Means
+
+```{r t-test, echo = FALSE}
+
+t_result <- t.test(glasgow$Attendance, edinburgh$Attendance, var.equal = FALSE)
+
+t_table <- data.frame(
+  Statistic = round(t_result$statistic, 4),
+  df        = round(t_result$parameter, 2),
+  p_value   = formatC(t_result$p.value, format = "e", digits = 4)
+)
+
+knitr::kable(t_table,
+             caption = "Welch's two-sample t-test for difference in mean Attendance.",
+             align = "c",
+             col.names = c("t-statistic", "df", "p-value"),
+             booktabs = TRUE)
+```
+
+Having established that the variances are not significantly different, we now test whether mean attendance differs between the two cities:$$H_0: \mu_{\text{Glasgow}} = \mu_{\text{Edinburgh}} \qquad \text{vs} \qquad H_1: \mu_{\text{Glasgow}} \neq \mu_{\text{Edinburgh}}$$Welch's two-sample $t$-test is used, which remains valid regardless of whether the variances are equal. The test yields $t = -2.505$ with $df = 193.61$ and $p = 0.013$. Since $p < \alpha = 0.05$, $H_0$ is rejected and we conclude that Glasgow's mean attendance rate is statistically significantly lower than Edinburgh's. This finding is consistent with the non-overlapping confidence intervals for the mean reported in Table \@ref(tab:ci-mean).
 
 \newpage
 ### Section 2: Investigating the relationship between Attendance and other variables
@@ -255,7 +263,8 @@ rownames(cor_matrix) <- c("Attendance", "Attainment", "Crime Rate", "CIF", "Inco
 
 knitr::kable(cor_matrix,
              caption = "Pairwise Pearson correlation coefficients between the five selected variables.",
-             align = "c")
+             align = "c",
+             booktabs = TRUE)
 
 # Store individual correlations for later use
 r_attainment <- cor_matrix[1, 2]
@@ -301,7 +310,8 @@ display_name <- gsub("_", " ", data2_name)
 knitr::kable(
   tidy(lm_model),
   digits = 4,
-  caption = paste("Simple linear regression model: Attendance ~", display_name)
+  caption = paste("Simple linear regression model: Attendance ~", display_name),
+  booktabs = TRUE
 )
 ```
 
@@ -316,7 +326,8 @@ colnames(ci) <- c("2.5%", "97.5%")
 knitr::kable(
   ci,
   digits = 4,
-  caption = "95\\% Confidence Intervals for Regression Coefficients"
+  caption = "95\\% Confidence Intervals for Regression Coefficients",
+  booktabs = TRUE
 )
 ```
 
@@ -419,7 +430,8 @@ f_table <- data.frame(
 knitr::kable(f_table,
              caption = "F-tests comparing variance of Attendance between regions.",
              align = "c",
-             col.names = c("Comparison", "F-statistic", "df1", "df2", "p-value"))
+             col.names = c("Comparison", "F-statistic", "df1", "df2", "p-value"),
+             booktabs = TRUE)
 ```
 
 ```{r t-tests-pairwise, echo=FALSE}
@@ -440,7 +452,8 @@ t_table <- data.frame(
 knitr::kable(t_table,
              caption = "Welch's t-tests comparing mean Attendance between regions.",
              align = "c",
-             col.names = c("Comparison", "t-statistic", "df", "p-value"))
+             col.names = c("Comparison", "t-statistic", "df", "p-value"),
+             booktabs = TRUE)
 ```
 
 Table \@ref(tab:f-tests-pairwise) shows that none of the pairwise F-tests for variance are statistically significant at the $5%$ level, so there is insufficient evidence that Attendance variability differs between any pair of regions. Table \@ref(tab:t-tests-pairwise) shows that Glasgow’s mean Attendance is significantly lower than both Edinburgh’s ($p=0.0131$) and Elsewhere’s ($p=3.784\times10^{-7}$), while the difference between Edinburgh and Elsewhere is not statistically significant at the $5%$ level ($p=0.0572$). Together, these results indicate that Glasgow is the distinctive low-Attendance region among the three groups.
@@ -478,6 +491,7 @@ reg_table <- data.frame(
 knitr::kable(reg_table,
              caption = "Regional regression models: Attendance on Income\\_rate.",
              align = "c",
+             booktabs = TRUE,
              col.names = c("Region", "Intercept", "Slope",
                            "Slope CI lower", "Slope CI upper", "$R^2$"))
 ```
@@ -513,7 +527,8 @@ pred_table <- data.frame(
 knitr::kable(pred_table,
              caption = "95\\% prediction intervals for Attendance at Income\\_rate $= 0.15$.",
              align = "c",
-             col.names = c("Region", "Fitted", "Lower", "Upper", "Width"))
+             col.names = c("Region", "Fitted", "Lower", "Upper", "Width"),
+             booktabs = TRUE)
 ```
 
 To further illustrate this, Table \@ref(tab:prediction-intervals) compares Attendance predictions at a common Income\_rate level ($= 0.15$, close to the overall median). Glasgow's predicted Attendance is lower and its prediction interval is notably wider, reflecting greater unexplained variability. Combined with Glasgow's much lower $R^2$ and flatter slope, this demonstrates that the income--attendance relationship operates fundamentally differently in Glasgow --- income deprivation alone cannot fully account for Glasgow's attendance patterns, suggesting the existence of a \textbf{"Glasgow effect"}.
@@ -546,6 +561,7 @@ knitr::kable(baseline_coef,
              caption = paste0("Baseline regression model (non-Glasgow, $n = ",
                               nrow(dat_baseline), "$): Attendance on Income\\_rate."),
              align = "c",
+             booktabs = TRUE,
              col.names = c("Term", "Estimate", "95% CI lower", "95% CI upper"),
              row.names = FALSE)
 ```
@@ -598,6 +614,7 @@ t_resid_table <- data.frame(
 knitr::kable(t_resid_table,
              caption = "One-sample t-test on Glasgow residuals ($H_0: \\mu_e = 0$).",
              align = "c",
+             booktabs = TRUE,
              col.names = c("Mean residual", "SE", "t-statistic", "df",
                            "p-value", "95% CI lower", "95% CI upper"),
              row.names = FALSE)
@@ -645,7 +662,8 @@ knitr::kable(scan_table,
              caption = "Pearson correlations: Glasgow residuals vs candidate variables (sorted by absolute r).",
              align = "c",
              col.names = c("Variable", "r", "Abs(r)"),
-             row.names = FALSE)
+             row.names = FALSE,
+             booktabs = TRUE)
 ```
 
 ```{r identify-top-var, echo=FALSE}
@@ -688,7 +706,8 @@ deep_table <- data.frame(
 knitr::kable(deep_table,
              caption = paste0("Regression of Glasgow residuals on ", top_var_tex, "."),
              align = "c",
-             row.names = FALSE)
+             row.names = FALSE,
+             booktabs = TRUE)
 ```
 
 Figure \@ref(fig:deep-dive-scatter) and Table \@ref(tab:deep-dive-table) show that within Glasgow, data zones where `r top_var_tex` is worse tend to have more negative residuals — meaning their attendance falls further below the national baseline than income alone would predict. The regression of residuals on `r top_var_tex` explains $R^2 =$ `r round(r2_deep, 3)` of the variation in the Glasgow effect, with a slope whose $95\%$ confidence interval excludes zero.
@@ -708,7 +727,8 @@ cont_table <- table(resid_cat, topvar_cat)
 
 knitr::kable(cont_table,
              caption = paste0("Contingency table: Residual category $\\times$ ",
-                              top_var_tex, " category (Glasgow only)."))
+                              top_var_tex, " category (Glasgow only)."),
+             booktabs = TRUE)
 
 chi_result <- chisq.test(cont_table)
 ```
@@ -750,5 +770,5 @@ Future work could extend the analysis in several directions. A multiple regressi
 
 The R code to produce the analysis and plots in this report is as follows:
 
-```{r ref.label=knitr::all_labels(), echo = T, eval = F}
+```{r ref.label=knitr::all_labels(), echo = T, eval = F, tidy=TRUE, tidy.opts=list(width.cutoff=70)}
 ```
