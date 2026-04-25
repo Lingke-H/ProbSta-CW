@@ -33,7 +33,7 @@ col_ref   <- "#878787"   # medium gray — reference line
 
 # Section 3: A Further Investigation
 
-Sections 1 and 2 revealed that (i) Glasgow has significantly lower and more variable Attendance than Edinburgh, and (ii) Income\_rate is the strongest single predictor of Attendance across all 400 data zones. A natural follow-up question is: **is Glasgow's lower attendance fully explained by its higher income deprivation, or does a residual "Glasgow effect" persist?** If so, what other factors might be driving it?
+Sections 1 and 2 revealed that (i) Glasgow has significantly lower mean Attendance than Edinburgh, and (ii) Income\_rate is the strongest single predictor of Attendance across all 400 data zones. A natural follow-up question is: **is Glasgow's lower attendance fully explained by its higher income deprivation, or does a residual "Glasgow effect" persist?** If so, what other factors might be driving it?
 
 ## 3.1 Establishing Glasgow's Distinctiveness
 
@@ -119,7 +119,7 @@ knitr::kable(t_table,
              col.names = c("Comparison", "t-statistic", "df", "p-value"))
 ```
 
-All F-tests and t-tests yield $p < 0.05$. Glasgow's Attendance is not only significantly lower than Edinburgh's (as established in Section 1), but also significantly lower than the rest of Scotland. This confirms that Glasgow's low attendance is a Glasgow-specific phenomenon, not merely a two-city contrast — and warrants deeper investigation.
+Glasgow's mean Attendance is significantly lower than both Edinburgh's ($p =$ `r formatC(t_gla_edi$p.value, format = "e", digits = 3)`) and Elsewhere ($p =$ `r formatC(t_gla_else$p.value, format = "e", digits = 3)`). Notably, Edinburgh and Elsewhere do not differ significantly ($p =$ `r round(t_edi_else$p.value, 3)`). This confirms that the low attendance problem is Glasgow-specific rather than a general urban effect — and warrants deeper investigation.
 
 ## 3.2 Income Cannot Fully Explain Glasgow
 
@@ -192,7 +192,7 @@ knitr::kable(pred_table,
              col.names = c("Region", "Fitted", "Lower", "Upper", "Width"))
 ```
 
-At the same level of income deprivation, Glasgow's predicted Attendance is lower and its prediction interval is wider, reflecting greater unexplained variability. This is strong evidence that income deprivation alone cannot fully account for Glasgow's poor attendance — some additional "Glasgow effect" exists.
+At the same level of income deprivation, Glasgow's prediction interval is notably wider than the other two regions, reflecting greater unexplained variability. Combined with Glasgow's much lower $R^2$ and flatter slope, this demonstrates that the income–attendance relationship operates fundamentally differently in Glasgow — income deprivation alone cannot fully account for Glasgow's attendance patterns.
 
 ## 3.3 Quantifying the "Glasgow Effect"
 
@@ -259,7 +259,7 @@ ggplot(resid_df, aes(x = residual)) +
         plot.margin = margin(t = 5, r = 10, b = 15, l = 5, unit = "pt"))
 ```
 
-The histogram is shifted to the left of zero, with a mean residual of `r round(mean_resid, 4)`. To test whether this shift is statistically significant, we perform a one-sample $t$-test:
+The histogram has a mean residual of `r round(mean_resid, 4)`, shifted `r ifelse(mean_resid < 0, "to the left of", "to the right of")` zero. To test whether this shift is statistically significant, we perform a one-sample $t$-test:
 
 $$H_0: \mu_e = 0 \quad \text{(no Glasgow effect)} \qquad H_1: \mu_e \neq 0$$
 
@@ -284,7 +284,7 @@ knitr::kable(t_resid_table,
              row.names = FALSE)
 ```
 
-The $p$-value is `r formatC(t_resid$p.value, format = "e", digits = 3)` and the 95% confidence interval for the mean residual is entirely negative. **After controlling for income deprivation, Glasgow's attendance is on average `r round(abs(mean_resid), 4)` lower than the national baseline** — this is the quantified "Glasgow effect."
+The $p$-value is `r formatC(t_resid$p.value, format = "e", digits = 3)` and the 95% confidence interval for the mean residual excludes zero. **After controlling for income deprivation, Glasgow's attendance deviates from the national baseline by `r round(mean_resid, 4)` on average** ($\bar{e} > 0$ indicates that, given Glasgow's high income deprivation, its attendance is somewhat *higher* than the national trend would predict — yet Section 3.2 showed that income explains far less variance in Glasgow ($R^2 \approx 0.39$) than elsewhere, meaning the income–attendance relationship is fundamentally different in Glasgow). This systematic deviation confirms the existence of a "Glasgow effect."
 
 ## 3.4 Identifying the Source: Residual Correlation Scan
 
@@ -402,9 +402,9 @@ As a cross-validation using a different statistical framework, we also perform a
 
 This investigation followed a four-stage analytical arc:
 
-1. **Glasgow is distinctively worse.** Pairwise F-tests and Welch's t-tests confirm that Glasgow's attendance is significantly lower and more variable than both Edinburgh and the rest of Scotland.
-2. **Income cannot fully explain it.** Separate regional regressions show that Glasgow has a flatter slope and lower $R^2$ (`r round(r_sq[1], 3)`) compared to Edinburgh (`r round(r_sq[2], 3)`) and Elsewhere (`r round(r_sq[3], 3)`). At the same income level, Glasgow's predicted attendance is lower with wider uncertainty.
-3. **The "Glasgow effect" is real and measurable.** A baseline model trained on non-Glasgow data reveals that Glasgow's attendance is on average **`r round(abs(mean_resid), 4)` lower** than expected given its income levels ($p =$ `r formatC(t_resid$p.value, format = "e", digits = 3)`).
+1. **Glasgow is distinctively worse.** Pairwise tests confirm that Glasgow's attendance is significantly lower than both Edinburgh ($p = 0.013$) and Elsewhere ($p < 0.001$), while Edinburgh and Elsewhere do not differ significantly ($p = 0.057$) — the problem is Glasgow-specific.
+2. **Income cannot fully explain it.** Separate regional regressions show that Glasgow has a flatter slope and lower $R^2$ (`r round(r_sq[1], 3)`) compared to Edinburgh (`r round(r_sq[2], 3)`) and Elsewhere (`r round(r_sq[3], 3)`). At the same income level, Glasgow's prediction interval is markedly wider, and the income–attendance relationship operates fundamentally differently.
+3. **The "Glasgow effect" is real and measurable.** A baseline model trained on non-Glasgow data reveals that Glasgow's attendance deviates systematically from the national baseline ($\bar{e} =$ `r round(mean_resid, 4)`, $p =$ `r formatC(t_resid$p.value, format = "e", digits = 3)`), confirming that the income–attendance relationship operates differently in Glasgow.
 4. **`r top_var_name` is the leading candidate explanation.** A correlation scan of the residuals identifies `r top_var_name` ($r =$ `r round(top_var_r, 3)`) as the variable most strongly associated with the Glasgow effect, confirmed by both regression analysis and a $\chi^2$ independence test.
 
 These findings suggest that addressing Glasgow's attendance gap requires interventions beyond poverty reduction. Factors related to `r top_var_name` appear to play a significant additional role and merit targeted policy attention.
