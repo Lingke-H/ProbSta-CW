@@ -251,35 +251,21 @@ ggpairs(dat[, vars],
         columnLabels = c("Attendance", "Attainment", "Crime Rate", "CIF", "Income Rate"),
         lower = list(continuous = wrap("points", size = 0.4, alpha = 0.5, colour = col_point)),
         diag  = list(continuous = wrap("densityDiag", fill = col_line, alpha = 0.3)),
-        upper = list(continuous = wrap("cor", size = 3)))
+        upper = list(continuous = wrap("cor", size = 3, stars = FALSE)))
 ```
 
-Figure \@ref(fig:scatters-1) shows the pairwise scatterplot matrix for Attendance and the four selected variables. It suggests that Attendance is positively associated with Attainment and negatively associated with Crime\_rate, CIF and Income\_rate. Among these, the relationship between Attendance and Income\_rate appears strongest. Meanwhile, the matrix displays a close association between CIF and Income\_rate, suggesting that these two factors capture closely related aspects of deprivation.
+Figure \@ref(fig:scatters-1) shows the pairwise scatterplot matrix for Attendance and the four selected variables. The Pearson correlation coefficients displayed in the upper triangle indicate that Attendance is positively associated with Attainment ($r = 0.691$) and negatively associated with Crime\_rate ($r = -0.469$), CIF ($r = -0.742$), and Income\_rate ($r = -0.761$). Among these, Income\_rate exhibits the strongest absolute correlation with Attendance and was therefore chosen as the predictor in the simple linear regression model. The matrix also reveals an extremely high correlation between CIF and Income\_rate ($r = 0.954$), suggesting that these two factors capture closely related aspects of deprivation.
 
-### 2.2 Pearson Correlation Coefficients
-
-```{r Pairwise-Pearson-correlation-coefficients, echo = FALSE}
-# Full 5x5 pairwise Pearson correlation matrix
-cor_matrix <- round(cor(dat[, vars], use = "complete.obs", method = "pearson"), 3)
-colnames(cor_matrix) <- c("Attendance", "Attainment", "Crime Rate", "CIF", "Income Rate")
-rownames(cor_matrix) <- c("Attendance", "Attainment", "Crime Rate", "CIF", "Income Rate")
-
-knitr::kable(cor_matrix,
-             caption = "Pairwise Pearson correlation coefficients between the five selected variables.",
-             align = "c",
-             booktabs = TRUE)
-
+```{r store-correlations, echo = FALSE}
 # Store individual correlations for later use
+cor_matrix <- round(cor(dat[, vars], use = "complete.obs", method = "pearson"), 3)
 r_attainment <- cor_matrix[1, 2]
 r_crime      <- cor_matrix[1, 3]
 r_cif        <- cor_matrix[1, 4]
 r_income     <- cor_matrix[1, 5]
 ```
 
-
-To quantify these linear associations, Table \@ref(tab:Pairwise-Pearson-correlation-coefficients) presents the pairwise Pearson correlation coefficients for the five variables. Attendance has the strongest absolute correlation with Income\_rate ($r=-0.756$), followed by CIF ($r=-0.735$) and Attainment ($r=0.686$). Since Income\_rate has the largest absolute correlation with Attendance among the four selected explanatory variables, it was chosen as the predictor in the simple linear regression model. The correlation between CIF and Income\_rate is also extremely high ($r=0.953$), which verifies the substantial overlap mentioned previously.
-
-### 2.3 Simple Linear Regression
+### 2.2 Simple Linear Regression
 
 ```{r linear-regression-model, echo = FALSE}
 # Identify the variable with the highest absolute correlation with Attendance
@@ -336,7 +322,7 @@ knitr::kable(
 
 The $95\%$ confidence interval for the slope is entirely negative, which is consistent with a clear negative linear association between Income\_rate and Attendance. The model has \textbf{$R^2=0.5796$}, meaning that about $57.96\%$ of the sample variation in Attendance is explained by the fitted linear relationship with Income\_rate. This indicates that among the four variables, Income_rate is the strongest single linear predictor of Attendance in this simple regression.
 
-### 2.4 Visualisation of the Fitted Model
+### 2.3 Visualisation of the Fitted Model
 
 ```{r linear-regression, echo = FALSE, fig.height=4, fig.width=6, fig.cap='Scatterplot with fitted regression line'}
 
@@ -361,7 +347,7 @@ ggplot(dat, aes(x = !!sym(data2_name), y = Attendance)) +
 
 Figure \@ref(fig:linear-regression) shows the scatterplot of Attendance against Income\_rate, together with the fitted regression line and $95\%$ confidence band. The fitted line captures the overall negative linear trend: data zones with higher income deprivation tend to have lower Attendance rates. However, there remains noticeable vertical scatter around the line, particularly at higher values of Income\_rate. This suggests that additional factors may also influence Attendance.
 
-### 2.5 Residual Diagnostics
+### 2.4 Residual Diagnostics
 
 ```{r residuals, echo = FALSE, fig.height=4, fig.width=6, fig.cap='Residuals of the fitted model'}
 
