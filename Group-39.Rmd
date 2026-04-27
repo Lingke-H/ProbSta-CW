@@ -1,7 +1,7 @@
 ---
-title: "An Analysis of School Attendance and Socio-Economic Deprivation in Scotland"
+title: "Group 39: An analysis of data on Attendance in Scotland"
 author: "Yuchen Xu, Yu Li, Lingke Huang, Sirui Lu"
-date: "26/4/2025"
+date: "26/4/2026"
 output:
   bookdown::pdf_document2:
     latex_engine: pdflatex
@@ -57,17 +57,17 @@ The findings indicate that Glasgow City has a statistically significantly lower 
 
 
 # Introduction
-School attendance is a fundamental indicator of educational engagement. Research consistently shows that pupils with high rates of absenteeism achieve lower academic outcomes, face greater difficulties in securing employment, and are more likely to experience social exclusion in later life. In Scotland, school attendance varies considerably across geographic areas, and this variation is closely linked to underlying socio-economic conditions: areas with higher levels of income deprivation, poorer health outcomes, and limited access to services tend to record lower attendance rates. Glasgow, in particular, has long been recognised as a city where multiple deprivation indicators concentrate, raising the question of whether its attendance patterns can be attributed to measurable socio-economic factors or reflect a distinctive structural phenomenon.
+School attendance is a fundamental indicator of educational engagement. Research consistently shows that pupils with high rates of absenteeism achieve lower academic outcomes, face greater difficulties in securing employment, and are more likely to experience social exclusion in later life. In Scotland, school attendance varies considerably across geographic areas, and this variation is thought to be associated with underlying differences in socio-economic conditions rather than individual choice alone. Understanding where attendance is lowest, and which factors are most strongly associated with poor attendance, is therefore of direct importance to education authorities and government policymakers seeking to allocate resources effectively.
 
 This report addresses three objectives. First, it compares the distribution of school attendance rates between Glasgow City and the City of Edinburgh, Scotland's two largest cities, to determine whether the two cities differ significantly in their average attendance levels and in the variability of attendance across their constituent areas. Second, using the full available dataset, it investigates which socio-economic indicators are most strongly linearly associated with attendance, and quantifies that relationship through a simple linear regression model. Third, combining the findings from the first two sections, it examines whether Glasgow's low attendance is fully explained by income deprivation, or whether a residual "Glasgow effect" exists, and explores which additional factors may drive it.
 
-The data used in this report are drawn from the 2020 Scottish Index of Multiple Deprivation (SIMD), a composite measure developed by the Scottish Government to identify concentrations of deprivation across Scotland and to support evidence-based policy-making. The dataset contains observations from a sample of $n = 400$ data zones — small, spatially defined geographic units each typically containing between 500 and 1,000 residents, of which there are 6,976 in Scotland in total. Of the 400 sampled zones, 100 are located in Glasgow City, 100 in the City of Edinburgh, and the remaining 200 are from elsewhere in Scotland. Each data zone is described by 37 variables: three geographic identifiers and 34 substantive indicators spanning domains including population, income, employment, health, education, geographic access to services, crime, and housing. The primary response variable of interest is Attendance, defined as the proportion of school-age pupils attending school within a given data zone over the academic year. Although Attendance is theoretically bounded on $[0, 1]$, observed values in the sample range from approximately $0.50$ to $0.95$, exhibiting considerable regional variability.
+The data used in this report are drawn from the 2020 Scottish Index of Multiple Deprivation (SIMD), a composite measure developed by the Scottish Government to identify concentrations of deprivation across Scotland and to support evidence-based policy-making. The dataset contains observations from a sample of $n = 400$ data zones — small, spatially defined geographic units each typically containing between 500 and 1,000 residents, of which there are 6,976 in Scotland in total. Of the 400 sampled zones, 100 are located in Glasgow City, 100 in the City of Edinburgh, and the remaining 200 are from elsewhere in Scotland. Each data zone is described by 34 variables spanning domains including population, income, employment, health, education, geographic access to services, crime, and housing. The primary response variable of interest is Attendance, defined as the proportion of school-age pupils attending school within a given data zone over the academic year. As a continuous numerical variable taking values in the interval $[0, 1]$, the attendance data in the sample exhibits considerable regional variability, ranging from areas of severe absenteeism to those with near-full attendance records.
 
 Identifying the specific socio-economic indicators most closely linked to low attendance is essential for enabling policymakers to target resources and interventions at the most deprived communities, ultimately helping to narrow the educational inequality gap. More broadly, this analysis contributes to the evidence base for understanding how multiple dimensions of deprivation interact to shape educational outcomes, and whether area-level interventions beyond income support may be needed to address persistent attendance disparities.
 \newpage
 
 # Methods
-To compare the attendance rates between Glasgow City ($n_1 = 100$) and the City of Edinburgh ($n_2 = 100$), exploratory graphical techniques were first employed. Side-by-side boxplots were constructed to visually assess differences in medians and identify potential outliers, while histograms were generated to examine the underlying shape and skewness of each city's attendance distribution.
+Firstly, we used the methods of comparative analysis for Glasgow and Edinburgh. To compare the attendance rates between Glasgow City ($n_1 = 100$) and the City of Edinburgh ($n_2 = 100$), exploratory graphical techniques were initially employed. Side-by-side boxplots were constructed to visually assess differences in medians and identify potential outliers, while histograms were generated to examine the underlying shape and skewness of each city's attendance distribution.
 
 Following the visual inspection, sample means ($\bar{x}$) and sample variances ($s^2$) were calculated. A $95\%$ confidence interval for each city's population mean was constructed using the $t$-distribution: 
 $$\bar{x} \pm t_{\alpha/2,\; n-1} \cdot \frac{s}{\sqrt{n}}$$
@@ -76,20 +76,20 @@ $$\left(\frac{(n-1)s^2}{\chi^2_{1-\alpha/2,\; n-1}},\quad \frac{(n-1)s^2}{\chi^2
 To formally test for a difference in the population mean attendance rates, Welch's two-sample $t$-test was conducted. This test was selected because it does not assume equal population variances. The hypotheses tested were $H_0: \mu_{\text{Glasgow}} = \mu_{\text{Edinburgh}}$ against the two-sided alternative $H_1: \mu_{\text{Glasgow}} \neq \mu_{\text{Edinburgh}}$. Additionally, to compare the variability between the two cities, an $F$-test was applied to test the ratio of the population variances, evaluating $H_0: \sigma^2_{\text{Glasgow}} / \sigma^2_{\text{Edinburgh}} = 1$ versus $H_1: \sigma^2_{\text{Glasgow}} / \sigma^2_{\text{Edinburgh}} \neq 1$.
 
 
-Secondly, correlation and linear regression analysis were conducted. All $N = 400$ sampled data zones were utilised to explore the relationships between the response variable (Attendance, $y$) and four potential socio-economic predictors (Attainment, Crime\_rate, CIF (Comparative Illness Factor), and Income\_rate) using a pairwise scatterplot matrix. The strength and direction of the linear associations were quantified through the Pearson correlation coefficient: 
+Secondly, we conducted correlation and linear regression analysis. For this second stage, all $N = 400$ sampled data zones were utilised to explore the broader relationships between the response variable (Attendance, $y$) and four potential socio-economic predictors (Attainment, Crime Rate, Comparative Illness Factor, and Income Rate) using a pairwise scatterplot matrix. The strength and direction of the linear associations were quantified through the Pearson correlation coefficient: 
 $$r = \frac{\sum_{i=1}^{n} (x_i - \bar{x})(y_i - \bar{y})}{\sqrt{\sum_{i=1}^{n} (x_i - \bar{x})^2 \sum_{i=1}^{n} (y_i - \bar{y})^2}}$$
-Upon identifying the variable with the highest absolute value of $r$ as the primary predictor, a simple linear regression (SLR) model was estimated using Ordinary Least Squares (OLS). The model is specified as:
+Upon identifying the variable with the highest absolute value of $r$ as the primary predictor, a simple linear regression (SLR) model was estimated using Ordinary Least Squares (OLS). The model was specified as:
 $$Y_i = \beta_0 + \beta_1 X_i + \epsilon_i, \qquad \epsilon_i \overset{\text{iid}}{\sim} N(0, \sigma^2)$$
 where $\beta_0$ is the intercept and $\beta_1$ is the slope coefficient. The overall goodness-of-fit was evaluated using the coefficient of determination $R^2$. Finally, a plot of the residuals ($\hat{\epsilon}_i$) against the fitted values ($\hat{Y}_i$) was examined to verify the assumptions of linearity and homoscedasticity.
 
-Thirdly, a further investigation into the Glasgow effect was conducted by extending the comparison to three regions: Glasgow, Edinburgh, and the rest of Scotland. Pairwise $F$-tests and Welch's $t$-tests were employed to establish Glasgow's distinctiveness. Separate simple linear regression models of Attendance on Income\_rate were fitted for each region to compare slopes, $R^2$ values, and $95\%$ confidence intervals. To quantify the Glasgow effect, a baseline regression was trained on non-Glasgow data ($n = 300$) and used to predict Glasgow's expected attendance; the residuals ($e_i = \text{Actual}_i - \text{Predicted}_i$) were tested via a one-sample $t$-test ($H_0: \mu_e = 0$). A Pearson correlation scan of these residuals against all available continuous variables was conducted to identify candidate explanatory factors. The top-ranked variable was further examined through a scatter plot, linear regression of the residuals on that variable, and a $\chi^2$ test of independence on a $3 \times 3$ contingency table formed by categorising both the residuals and the candidate variable into terciles.
+Thirdly, we conducted a further investigation into the Glasgow effect by extending the comparison to three regions, including Glasgow, Edinburgh, and the rest of Scotland. We employed pairwise $F$-tests and Welch's $t$-tests to establish Glasgow's distinctiveness. Separate simple linear regression models of Attendance on Income\_rate were fitted for each region to compare slopes, $R^2$ values, and $95\%$ confidence intervals. To quantify the Glasgow effect, a baseline regression was trained on non-Glasgow data ($n = 300$) and used to predict Glasgow's expected attendance; the residuals ($e_i = \text{Actual}_i - \text{Predicted}_i$) were tested via a one-sample $t$-test ($H_0: \mu_e = 0$). A Pearson correlation scan of these residuals against all available continuous variables was conducted to identify candidate explanatory factors. The top-ranked variable was further examined through a scatter plot, linear regression of the residuals on that variable, and a $\chi^2$ test of independence on a $3 \times 3$ contingency table formed by categorising both the residuals and the candidate variable into terciles.
 
 \newpage
 
 
 # Results
 
-## Summary Statistics and Hypothesis Tests for Glasgow versus Edinburgh
+## Section 1: Summary Statistics and Hypothesis Tests for Glasgow versus Edinburgh
 This section compares the distribution of Attendance between Glasgow City ($n_1 = 100$) and the City of Edinburgh ($n_2 = 100$) using graphical summaries, descriptive statistics, confidence intervals, and formal hypothesis tests.
 
 ### Exploratory Visualisation
@@ -169,7 +169,7 @@ knitr::kable(ci_mean_table,
              booktabs = TRUE)
 ```
 
-The $95\%$ confidence intervals for the population mean (Table \@ref(tab:ci-mean)) are $(0.745, 0.778)$ for Glasgow and $(0.774, 0.813)$ for Edinburgh. These two intervals do not overlap, providing strong preliminary evidence that the true mean attendance rates differ between the two cities. 
+The $95\%$ confidence intervals for the population mean (Table \@ref(tab:ci-mean)) are $(0.745, 0.778)$ for Glasgow and $(0.774, 0.813)$ for Edinburgh. These two intervals do not overlap, providing preliminary visual evidence that the true mean attendance rates may differ between the two cities; however, a formal hypothesis test is required to confirm this (see Section 4.1.4). 
 
 ```{r ci-var, echo = FALSE}
 
@@ -240,7 +240,7 @@ To assess whether attendance rates are more variable in one city than the other,
 In summary, Glasgow has a statistically significantly lower mean attendance rate than Edinburgh ($p = 0.013$), while no significant difference in variance is detected ($p = 0.133$). The lower mean attendance in Glasgow, combined with the left-skewed distribution evident in Figure \@ref(fig:city-histogram), suggests that a subset of Glasgow data zones experience particularly poor attendance, which may reflect localised socio-economic disadvantage. These findings motivate the investigation in Section 2, where the analysis explores which socio-economic factors are most strongly associated with attendance across all 400 Scottish data zones.
 
 \newpage
-## Investigating the Relationship between Attendance and Other Variables
+## Section 2: Investigating the Relationship between Attendance and Other Variables
 
 In this section, all 400 data zones are analysed together to evaluate which factors are most closely associated with Attendance. The four variables — Attainment, Crime\_rate, CIF (Comparative Illness Factor), and Income\_rate — were chosen to represent educational attainment, crime, health, and income deprivation, respectively. The linear associations between Attendance and these four variables are compared, and a simple linear regression model is then fitted using the variable with the largest absolute Pearson correlation with Attendance.
 
@@ -313,8 +313,11 @@ $$ \hat{y} = 0.8887 + (-0.635) \times x $$
 ```{r regression-coef-table, echo = FALSE}
 display_name <- gsub("_", " ", data2_name)
 
+coef_df <- tidy(lm_model)
+coef_df$p.value <- ifelse(coef_df$p.value < 0.001, "< 0.001",
+                          formatC(coef_df$p.value, format = "f", digits = 4))
 knitr::kable(
-  tidy(lm_model),
+  coef_df,
   digits = 4,
   caption = paste("Simple linear regression model: Attendance ~", display_name),
   booktabs = TRUE
@@ -388,11 +391,11 @@ Overall, among the four candidate variables, Income\_rate shows the strongest ne
 
 \newpage
 
-## A Further Investigation of the Low Attendance Rate in Glasgow
+## Section 3: A Further Investigation of the Low Attendance Rate in Glasgow
 
 Section 1 showed that Glasgow has a lower mean Attendance than Edinburgh, while Section 2 identified Income\_rate as the strongest single linear predictor of Attendance in the full sample. The question remains whether Glasgow’s lower Attendance can be explained entirely by income deprivation. To investigate this, we first compare Attendance across Glasgow, Edinburgh and Elsewhere, then compare region-specific regression models, and finally examine Glasgow’s deviation from a non-Glasgow baseline together with its associations with other variables.
 
-### Regional Comparison of Attendance
+### Evaluate Glasgow’s Distinctiveness: Regional Comparison of Attendance
 
 ```{r boxplot-3region, echo=FALSE, fig.height=4, fig.width=6, fig.cap='Distribution of Attendance across three regions'}
 ggplot(dat, aes(x = Region, y = Attendance, fill = Region)) +
@@ -453,7 +456,7 @@ None of the pairwise F-tests (Table \@ref(tab:f-tests-pairwise)) reach significa
 
 
 
-### Region-Specific Regression Analysis
+### Income Cannot Fully Explain Low Attendance Rate in Glasgow
 
 If Income\_rate fully explained the Attendance rate in Glasgow, regional regressions should produce similar slopes and $R^2$ values. However, as shown in Table \@ref(tab:regional-regression) and Figure \@ref(fig:scatter-regional), Glasgow's regression line is flatter (slope = $-0.455$ vs $-0.778$ for Elsewhere) and its $R^2$ ($0.3949$) is notably lower, meaning Income\_rate explains less of the variation in Glasgow's attendance.
 
@@ -486,7 +489,7 @@ knitr::kable(reg_table,
              align = "c",
              booktabs = TRUE,
              col.names = c("Region", "Intercept", "Slope",
-                           "Slope CI lower", "Slope CI upper", "$R^2$"))
+                           "Slope CI lower", "Slope CI upper", "R-squared"))
 ```
 
 ```{r scatter-regional, echo=FALSE, fig.height=4, fig.width=6, fig.cap='Regional regression lines for Attendance on Income\\_rate'}
@@ -523,7 +526,7 @@ knitr::kable(pred_table,
 
 To further illustrate this, Table \@ref(tab:prediction-intervals) compares Attendance predictions at a common Income\_rate level ($= 0.15$, close to the overall median). Glasgow's predicted Attendance is lower and its prediction interval is notably wider, reflecting greater unexplained variability. Combined with Glasgow's much lower $R^2$ and flatter slope, this demonstrates that the income--attendance relationship operates fundamentally differently in Glasgow --- income deprivation alone cannot fully account for Glasgow's attendance patterns, suggesting the existence of a \textbf{"Glasgow effect"}.
 
-### Baseline Model and Residual Analysis
+### Quantifying the “Glasgow Effect”: Baseline Model and Residual Analysis
 
 ```{r baseline-model, echo=FALSE}
 # Baseline model: trained on non-Glasgow data
@@ -610,7 +613,7 @@ knitr::kable(t_resid_table,
 
 The $p$-value is `r formatC(t_resid$p.value, format = "e", digits = 3)` and the $95\%$ confidence interval for the mean residual excludes zero. The mean residual is $\bar{e} =$ `r round(mean_resid, 4)` $> 0$, which may seem surprising given that Glasgow has the lowest raw attendance among the three regions. However, Glasgow also has by far the highest income deprivation, so the non-Glasgow baseline predicts very low attendance for Glasgow's income levels. The positive residual indicates that, conditional on its extreme income deprivation, Glasgow's attendance is actually somewhat higher than the non-Glasgow trend would predict. Therefore, the \textbf{"Glasgow effect"} here means a fundamentally different income--attendance relationship --- as evidenced by Glasgow's flatter slope and lower $R^2$ ($\approx 0.39$) in the regional regression analysis --- not simply an additional negative penalty on top of income deprivation.
 
-### Residual Correlation Scan
+### Identifying the Source: Residual Correlation Scan
 
 To explore which additional factors are associated with Glasgow’s deviation from the non-Glasgow baseline, Pearson correlations were computed between the Glasgow residuals and candidate variables.
 
@@ -663,7 +666,7 @@ top_var_tex  <- gsub("_", "\\_", top_var_name, fixed = TRUE)
 
 Among all candidate variables (Table \@ref(tab:residual-scan)), `r top_var_tex` shows the strongest correlation with the Glasgow residuals ($r =$ `r round(top_var_r, 3)`), suggesting it is the leading candidate for explaining Glasgow's deviation from the non-Glasgow baseline after accounting for income deprivation. This scan is exploratory: it identifies associated variables but does not establish causality, and some candidates may overlap with broader deprivation conditions.
 
-### Further Analysis of the Leading Candidate Variable
+### Deep Dive: Further Analysis of the Leading Candidate Variable
 
 ```{r deep-dive-scatter, echo=FALSE, fig.height=4, fig.width=6, fig.cap=paste0('Glasgow residuals vs ', top_var_tex)}
 lm_deep <- lm(glasgow$residual ~ glasgow[[top_var_name]])
@@ -720,7 +723,7 @@ chi_result <- chisq.test(cont_table)
 
 As a cross-validation using a different statistical framework, a $\chi^2$ test of independence is performed. Categorising both the residuals and `r top_var_tex` into terciles yields the contingency table above. The test statistic is $\chi^2 =$ `r round(chi_result$statistic, 3)` with `r chi_result$parameter` degrees of freedom ($p =$ `r formatC(chi_result$p.value, format = "e", digits = 3)`). `r ifelse(chi_result$p.value < 0.05, "We reject $H_0$ of independence: the two variables are significantly associated, confirming the linear analysis.", "The result is not significant at the 5% level, suggesting the association is primarily captured by the linear relationship.")`
 
-### Summary of Findings
+### Section 3 Summary
 
 This investigation followed a four-stage analytical arc:
 
